@@ -77,8 +77,27 @@ minimax_Lhat <- function(b, gamma, C, X, Y, mon_ind, sigma) {
            sum((f2 - f1) / sigma^2))
 }
 
-minimax_Lhat_RD <- function(b, gamma, C, Xt, Xc, Yt, Yc, sigma_t, sigma_c,
-                            mon_ind) {
+
+##' Estimator used in constructing the minimax CI for RDD
+##'
+##' Calculates the estimator that is used to construct the minimax
+##' CI for RDD
+##' 
+##' @param b point where the inverse modulus is evaluated at
+##' @param gamma length two vector of gammas (\eqn{(\gamma_1, \gamma_2)'})
+##' @param C length two vector of Cs (\eqn{(C_1, C_2)'})
+##' @param Xt \eqn{n_t \times k} design matrix for the treated units
+##' @param Xc \eqn{n_c \times k} design matrix for the control units
+##' @param Yt length \eqn{n_t} of outcome variables for the treated units
+##' @param Yc length \eqn{n_c} of outcome variables for the control units
+##' @param mon_ind indice of the monotone variables
+##' @param sigma_t standard deviation of the error term for the treated units
+##' (either length 1 or \eqn{n_t})
+##' @param sigma_c standard deviation of the error term for the control units
+##' @export
+
+minimax_Lhat_RD <- function(b, gamma, C, Xt, Xc, Yt, Yc, mon_ind,
+                            sigma_t, sigma_c) {
   
   om_inv <- invmod_RD(b, rep(gamma, 2), rep(C, 2), Xt, Xc, mon_ind = mon_ind,
                       sigma_t = sigma_t, sigma_c = sigma_c, ret_list = TRUE)
@@ -205,85 +224,95 @@ CI_one_sd <- function(bpairmat, delta, gamma, C, X, mon_ind, sigma, y, lower, al
   return(res)
 }
 
+##' Estimator used in constructing adaptive CIs for RDD
+##'
+##' Calculates the estimator that is used to construct the adaptive
+##' CI for RDD. The estimator corresponds to the inverse modulus
+##' \eqn{\omega^{-1}(b, \Lambda_{\mathcal{V}+}(\gamma_2, C_2),\Lambda_{\mathcal{V}+}(\gamma_1, C_1)) }
+##' 
+##' @param b point where the inverse modulus is evaluated at
+##' @param C1 \eqn{C_1}
+##' @param C2 \eqn{C_2}
+##' @param g1 \eqn{\gamma_1}
+##' @param g2 \eqn{\gamma_2}
+
+Lhatfun <- function(b, C1, C2, g1, g2, X, sigma, y){
+
+  f1_minus_f2 <- pos(b - C1 * Norm(Vplus(X, mon_ind))^g1 - 
+                       C2 * Norm(Vminus(X, mon_ind))^g2) / sigma
+  y_minus_midpoint <- (y - (C1 * Norm(Vplus(X,mon_ind))^g1 + b - 
+                              C2 * Norm(Vminus(X,mon_ind))^g2) / 2) / sigma
+  
+  Lhat_frac_num <- sum(f1_minus_f2 * y_minus_midpoint)
+  
+  # Calculation of omega'(del)
+  # Uses Lemma B.3 in A&K(2016)
+
+  omega_der_denom <- sum(f1_minus_f2 / sigma)
+  
+  Lhat <- .5 * b + Lhat_frac_num / omega_der_denom
+  
+  res <- c(Lhat, omega_der_denom) # denom is used to compute omega'
+  
+  return(res)
+}
+
 
 CI_one_sd_RD <- function(bpairmat, dmat, gamma, C, Xt, Xc, mon_ind,
-                         sigma_t, sigma_c, yt, yc, lower, al, Dir = F){
+                         sigma_t, sigma_c, yt, yc, lower, al, Dir = FALSE){
   
   # bpairmat[j,] = (omega(del,F_J,F_j, omega(del,F_j,F_J)) 
   # where del is given by sigma*(z_beta + z_{1-al/(2J)})
   
-  J <- length(gam)
+  J <- length(gamma)
   
-  bpairmat_l <- bpairmat[,1:2,drop=F]
-  bpairmat_u <- bpairmat[,3:4,drop=F]
-  dmat_l <- dmat[,1:2,drop=F]
-  dmat_u <- dmat[,3:4,drop=F]
+  bpairmat_l <- bpairmat[, 1:2, drop=F]
+  bpairmat_u <- bpairmat[, 3:4, drop=F]
+  dmat_l <- dmat[, 1:2, drop=F]
+  dmat_u <- dmat[, 3:4, drop=F]
   
-  if(Dir == TRUE){
+  if (Dir) {
     endj <- 1
     chatvec <- numeric(1)
-  }else{
+  } else {
     endj <- J
     chatvec <- numeric(J)
   }
   
-  for(j in 1:endj){
+  for (j in 1:endj) {
     
-    if(lower == TRUE){
-      bt <- bpairmat_l[j,1]
-      bc <- bpairmat_l[j,2]
-      del_t <- dmat_l[j,1]
-      del_c <- dmat_l[j,2]
+    if (lower) {
+      bt <- bpairmat_l[j, 1]
+      bc <- bpairmat_l[j, 2]
+      delta_t <- dmat_l[j, 1]
+      delta_c <- dmat_l[j, 2]
       C1 <- C[J]
       C2 <- C[j]
-      g1 <- gam[J]
-      g2 <- gam[j]
-    } 
-    else{
-      bt <- bpairmat_u[j,1]
-      bc <- bpairmat_u[j,2]
-      del_t <- dmat_u[j,1]
-      del_c <- dmat_u[j,2]
+      g1 <- gamma[J]
+      g2 <- gamma[j]
+    } else {
+      bt <- bpairmat_u[j, 1]
+      bc <- bpairmat_u[j, 2]
+      delta_t <- dmat_u[j, 1]
+      delta_c <- dmat_u[j, 2]
       C1 <- C[j]
       C2 <- C[J]
-      g1 <- gam[j]
-      g2 <- gam[J]
+      g1 <- gamma[j]
+      g2 <- gamma[J]
     } 
     
-    Lhatfun <- function(b,C1,C2,g1,g2,X,y){
-      sumpart1 <- (b - C1 * Norm(Vplus(X,mon_ind))^g1 - 
-                    C2 * Norm(Vminus(X,mon_ind))^g2) *  
-        (b - C1 * Norm(Vplus(X,mon_ind))^g1 - 
-           C2 * Norm(Vminus(X,mon_ind))^g2 > 0) 
-      sumpart2 <- y - (C1 * Norm(Vplus(X,mon_ind))^g1 + b - 
-                        C2 * Norm(Vminus(X,mon_ind))^g2)/2
-      
-      sumpart <- sumpart1 * sumpart2
-      
-      denom <- sum((b - C1 * Norm(Vplus(X,mon_ind))^g1 - 
-                     C2 * Norm(Vminus(X,mon_ind))^g2) *  
-                    (b - C1 * Norm(Vplus(X,mon_ind))^g1 - 
-                       C2 * Norm(Vminus(X,mon_ind))^g2 > 0)) 
-      
-      Lhat <- b/2 + sum(sumpart) / denom
-      
-      res <- c(Lhat,denom) # denom is used to compute omega'
-      
-      return(res)
-    }
+    Lhat_t_res <- Lhatfun(bt, C1, C2, g1, g2, Xt, sigma_t, yt)
+    Lhat_c_res <- Lhatfun(bc, C2, C1, g2, g1, Xc, sigma_c, yc)
     
-    Lhat_t_res <- Lhatfun(bt,C1,C2,g1,g2,Xt,yt)
-    Lhat_c_res <- Lhatfun(bc,C2,C1,g2,g1,Xc,yc)
-    
-    ompr_t <- del_t / Lhat_t_res[2]
-    ompr_c <- del_c / Lhat_c_res[2]
-    ompr <- sqrt(ompr_t^2 + ompr_c^2)
+    omega_der_t <- delta_t / Lhat_t_res[2]
+    omega_der_c <- delta_c / Lhat_c_res[2]
+    omega_der <- sqrt(omega_der_t^2 + omega_der_c^2)
     
     Lhat <- Lhat_t_res[1] - Lhat_c_res[1]
     
-    chat <- ifelse(lower == TRUE,
-                  Lhat - 0.5*((bt + bc) + qnorm(1-al)*ompr),
-                  Lhat + 0.5*((bt + bc) + qnorm(1-al)*ompr))
+    chat <- ifelse(lower == TRUE, 
+                  Lhat - 0.5 * ((bt + bc) + qnorm(1 - al) * omega_der), 
+                  Lhat + 0.5 * ((bt + bc) + qnorm(1 - al) * omega_der))
     
     
     chatvec[j] <- chat
@@ -291,32 +320,32 @@ CI_one_sd_RD <- function(bpairmat, dmat, gamma, C, Xt, Xc, mon_ind,
     
   }
   
-  res <- ifelse(lower == T,max(chatvec),min(chatvec))
+  res <- ifelse(lower == T, max(chatvec), min(chatvec))
   
   return(res)
   
 }
 
 
-AdjAlpha <- function(gam,C,X,mon_ind,lower,simlen = 10000){
+AdjAlpha <- function(gamma, C, X, mon_ind, lower, simlen = 1e04){
   
-  J <- length(gam)
-  n <- length(X[,1])
+  J <- length(gamma)
+  n <- length(X[, 1])
   
-  f <- function(a){
+  f <- function(a) {
     
     del_adpt <- qnorm(1-a)
-    b_mat_bon <- matrix(0,J,2)
+    b_mat_bon <- matrix(0, J, 2)
     
     for(j in 1:J){
-      gampair_j <- c(gam[j],gam[J])
-      Cpair_j <- c(C[j],C[J])
+      gampair_j <- c(gam[j], gam[J])
+      Cpair_j <- c(C[j], C[J])
       
-      b_mat_bon[j,1] <- modsol(del_adpt,gampair_j[2:1],Cpair_j[2:1],X,mon_ind)
-      b_mat_bon[j,2] <- modsol(del_adpt,gampair_j,Cpair_j,X,mon_ind)
+      b_mat_bon[j, 1] <- modsol(del_adpt, gampair_j[2:1], Cpair_j[2:1], X, mon_ind)
+      b_mat_bon[j, 2] <- modsol(del_adpt, gampair_j, Cpair_j, X, mon_ind)
     }
     
-    sumpartmat <- matrix(0,n,J)
+    sumpartmat <- matrix(0, n, J)
     omprvec <- numeric(J)
     
     del <- del_adpt
@@ -324,52 +353,52 @@ AdjAlpha <- function(gam,C,X,mon_ind,lower,simlen = 10000){
     for(j in 1:J){
       
       if(lower == TRUE){
-        b <- b_mat_bon[j,1]
+        b <- b_mat_bon[j, 1]
         C1 <- C[J]
         C2 <- C[j]
         g1 <- gam[J]
         g2 <- gam[j]
       } 
       else{
-        b <- b_mat_bon[j,2]
+        b <- b_mat_bon[j, 2]
         C1 <- C[j]
         C2 <- C[J]
         g1 <- gam[j]
         g2 <- gam[J]
       } 
       
-      sumpart1 <- (b - C1 * Norm(Vplus(X,mon_ind))^g1 - 
-                    C2 * Norm(Vminus(X,mon_ind))^g2) *  
-        (b - C1 * Norm(Vplus(X,mon_ind))^g1 - 
-           C2 * Norm(Vminus(X,mon_ind))^g2 > 0) 
+      sumpart1 <- (b - C1 * Norm(Vplus(X, mon_ind))^g1 - 
+                    C2 * Norm(Vminus(X, mon_ind))^g2) *  
+        (b - C1 * Norm(Vplus(X, mon_ind))^g1 - 
+           C2 * Norm(Vminus(X, mon_ind))^g2 > 0) 
       
       ompr <- del / sum(sumpart1)
-      sumpartmat[,j] <- sumpart1
+      sumpartmat[, j] <- sumpart1
       omprvec[j] <- ompr
       
     }
       
-    muvec <- ifelse(lower==T, qnorm(a), qnorm(1-a)) * omprvec
-    sigmamat <- matrix(0,J,J)
+    muvec <- ifelse(lower==T,  qnorm(a),  qnorm(1-a)) * omprvec
+    sigmamat <- matrix(0, J, J)
     
     for(j1 in 1:J){
       for(j2 in j1:J){
         if(j1 == j2){
-          sigmamat[j1,j1] <- omprvec[j1]^2
+          sigmamat[j1, j1] <- omprvec[j1]^2
         }else{
-          sigmamat[j1,j2] <- (omprvec[j1] * omprvec[j2] / del^2) *
-            sum(sumpartmat[,j1] * sumpartmat[,j2])
-          sigmamat[j2,j1] <- sigmamat[j1,j2]
+          sigmamat[j1, j2] <- (omprvec[j1] * omprvec[j2] / del^2) *
+            sum(sumpartmat[, j1] * sumpartmat[, j2])
+          sigmamat[j2, j1] <- sigmamat[j1, j2]
         }
       }
     }
       
-    q <- maxminQ(muvec,sigmamat,alpha/2,simlen,lower)
+    q <- maxminQ(muvec, sigmamat, alpha/2, simlen, lower)
     return(q)
     
   }
     
-  r <- uniroot(f,c(alpha/(2*J),alpha/2))
+  r <- uniroot(f, c(alpha/(2*J), alpha/2))
   res <- r$root
   
   return(res)
@@ -379,91 +408,91 @@ AdjAlpha <- function(gam,C,X,mon_ind,lower,simlen = 10000){
 
 
 # Adjust alpha for lower and upper together
-AdjAlpha2 <- function(gam,C,X,mon_ind,simlen = 10000){
+AdjAlpha2 <- function(gam, C, X, mon_ind, simlen = 10000){
   
   J <- length(gam)
-  n <- length(X[,1])
+  n <- length(X[, 1])
   
   f <- function(a){
     
     del_adpt <- qnorm(1-a)
-    b_mat_bon <- matrix(0,J,2)
+    b_mat_bon <- matrix(0, J, 2)
     
     for(j in 1:J){
-      gampair_j <- c(gam[j],gam[J])
-      Cpair_j <- c(C[j],C[J])
+      gampair_j <- c(gam[j], gam[J])
+      Cpair_j <- c(C[j], C[J])
       
-      b_mat_bon[j,1] <- modsol(del_adpt,gampair_j[2:1],Cpair_j[2:1],X,mon_ind)
-      b_mat_bon[j,2] <- modsol(del_adpt,gampair_j,Cpair_j,X,mon_ind)
+      b_mat_bon[j, 1] <- modsol(del_adpt, gampair_j[2:1], Cpair_j[2:1], X, mon_ind)
+      b_mat_bon[j, 2] <- modsol(del_adpt, gampair_j, Cpair_j, X, mon_ind)
     }
     
-    sumpartmatL <- matrix(0,n,J)
+    sumpartmatL <- matrix(0, n, J)
     omprvecL <- numeric(J)
-    sumpartmatU <- matrix(0,n,J)
+    sumpartmatU <- matrix(0, n, J)
     omprvecU <- numeric(J)
     
     del <- del_adpt
     
     for(j in 1:J){
       
-      b <- b_mat_bon[j,1]
+      b <- b_mat_bon[j, 1]
       C1 <- C[J]
       C2 <- C[j]
       g1 <- gam[J]
       g2 <- gam[j]
       
-      sumpart1 <- (b - C1 * Norm(Vplus(X,mon_ind))^g1 - 
-                    C2 * Norm(Vminus(X,mon_ind))^g2) *  
-        (b - C1 * Norm(Vplus(X,mon_ind))^g1 - 
-           C2 * Norm(Vminus(X,mon_ind))^g2 > 0) 
+      sumpart1 <- (b - C1 * Norm(Vplus(X, mon_ind))^g1 - 
+                    C2 * Norm(Vminus(X, mon_ind))^g2) *  
+        (b - C1 * Norm(Vplus(X, mon_ind))^g1 - 
+           C2 * Norm(Vminus(X, mon_ind))^g2 > 0) 
       
       ompr <- del / sum(sumpart1)
-      sumpartmatL[,j] <- sumpart1
+      sumpartmatL[, j] <- sumpart1
       omprvecL[j] <- ompr
       
-      b <- b_mat_bon[j,2]
+      b <- b_mat_bon[j, 2]
       C1 <- C[j]
       C2 <- C[J]
       g1 <- gam[j]
       g2 <- gam[J]
       
-      sumpart1 <- (b - C1 * Norm(Vplus(X,mon_ind))^g1 - 
-                    C2 * Norm(Vminus(X,mon_ind))^g2) *  
-        (b - C1 * Norm(Vplus(X,mon_ind))^g1 - 
-           C2 * Norm(Vminus(X,mon_ind))^g2 > 0) 
+      sumpart1 <- (b - C1 * Norm(Vplus(X, mon_ind))^g1 - 
+                    C2 * Norm(Vminus(X, mon_ind))^g2) *  
+        (b - C1 * Norm(Vplus(X, mon_ind))^g1 - 
+           C2 * Norm(Vminus(X, mon_ind))^g2 > 0) 
       
       ompr <- del / sum(sumpart1)
-      sumpartmatU[,j] <- sumpart1
+      sumpartmatU[, j] <- sumpart1
       omprvecU[j] <- ompr
       
       
       
     }
     
-    omprvec <- c(omprvecL,omprvecU)
-    sumpartmat <- cbind(sumpartmatL,-sumpartmatU)
+    omprvec <- c(omprvecL, omprvecU)
+    sumpartmat <- cbind(sumpartmatL, -sumpartmatU)
     
     muvec <- qnorm(a) * omprvec
-    sigmamat <- matrix(0,2*J,2*J)
+    sigmamat <- matrix(0, 2*J, 2*J)
     
     for(j1 in 1:(2*J)){
       for(j2 in j1:(2*J)){
         if(j1 == j2){
-          sigmamat[j1,j1] <- omprvec[j1]^2
+          sigmamat[j1, j1] <- omprvec[j1]^2
         }else{
-          sigmamat[j1,j2] <- (omprvec[j1] * omprvec[j2] / del^2) *
-            sum(sumpartmat[,j1] * sumpartmat[,j2])
-          sigmamat[j2,j1] <- sigmamat[j1,j2]
+          sigmamat[j1, j2] <- (omprvec[j1] * omprvec[j2] / del^2) *
+            sum(sumpartmat[, j1] * sumpartmat[, j2])
+          sigmamat[j2, j1] <- sigmamat[j1, j2]
         }
       }
     }
     
-    q <- maxminQ(muvec,sigmamat,alpha,simlen,Lower=T)
+    q <- maxminQ(muvec, sigmamat, alpha, simlen, Lower=T)
     return(q)
     
   }
   
-  r <- uniroot(f,c(alpha/(2*J),alpha))
+  r <- uniroot(f, c(alpha/(2*J), alpha))
   res <- r$root
   
   return(res)
@@ -471,31 +500,31 @@ AdjAlpha2 <- function(gam,C,X,mon_ind,simlen = 10000){
 }
 
 
-AdjAlpha_RD <- function(gam,C,Xt,Xc,mon_ind,sigma_t,sigma_c,lower,simlen = 10000,rp = alpha){
+AdjAlpha_RD <- function(gam, C, Xt, Xc, mon_ind, sigma_t, sigma_c, lower, simlen = 10000, rp = alpha){
   
   J <- length(gam)
-  nt <- length(Xt[,1])
-  nc <- length(Xc[,1])
+  nt <- length(Xt[, 1])
+  nc <- length(Xc[, 1])
   
   f <- function(tau){
     
     del <- qnorm(1-tau)
-    b_mat_bon <- matrix(0,J,2)
+    b_mat_bon <- matrix(0, J, 2)
     
-    sumpartmat_t <- matrix(0,nt,J)
-    sumpartmat_c <- matrix(0,nc,J)
+    sumpartmat_t <- matrix(0, nt, J)
+    sumpartmat_c <- matrix(0, nc, J)
     
     for(j in 1:J){
       
       if(lower==T){
-        gampair_j <- c(gam[J],gam[j])
-        Cpair_j <- c(C[J],C[j])
+        gampair_j <- c(gam[J], gam[j])
+        Cpair_j <- c(C[J], C[j])
       }else if(lower==F){
-        gampair_j <- c(gam[j],gam[J])
-        Cpair_j <- c(C[j],C[J])
+        gampair_j <- c(gam[j], gam[J])
+        Cpair_j <- c(C[j], C[J])
       }
       
-      modres <- modsol_RD(del,gampair_j,Cpair_j,Xt,Xc,mon_ind,sigma_t,sigma_c,
+      modres <- modsol_RD(del, gampair_j, Cpair_j, Xt, Xc, mon_ind, sigma_t, sigma_c, 
                          sol_list = 1)
       
       bt <- modres$bt
@@ -505,42 +534,42 @@ AdjAlpha_RD <- function(gam,C,Xt,Xc,mon_ind,sigma_t,sigma_c,lower,simlen = 10000
       g1 <- gampair_j[1]
       g2 <- gampair_j[2]
       
-      sumpartmat_t[,j]  <- (bt - C1 * Norm(Vplus(Xt,mon_ind))^g1 - 
-                    C2 * Norm(Vminus(Xt,mon_ind))^g2) *  
-        (bt - C1 * Norm(Vplus(Xt,mon_ind))^g1 - 
-           C2 * Norm(Vminus(Xt,mon_ind))^g2 > 0) / sigma_t^2
+      sumpartmat_t[, j]  <- (bt - C1 * Norm(Vplus(Xt, mon_ind))^g1 - 
+                    C2 * Norm(Vminus(Xt, mon_ind))^g2) *  
+        (bt - C1 * Norm(Vplus(Xt, mon_ind))^g1 - 
+           C2 * Norm(Vminus(Xt, mon_ind))^g2 > 0) / sigma_t^2
       
-      sumpartmat_c[,j]  <- (bc - C2 * Norm(Vplus(Xc,mon_ind))^g2 - 
-                     C1 * Norm(Vminus(Xc,mon_ind))^g1) *  
-        (bc - C2 * Norm(Vplus(Xc,mon_ind))^g2 - 
-           C1 * Norm(Vminus(Xc,mon_ind))^g1 > 0) / sigma_c^2
+      sumpartmat_c[, j]  <- (bc - C2 * Norm(Vplus(Xc, mon_ind))^g2 - 
+                     C1 * Norm(Vminus(Xc, mon_ind))^g1) *  
+        (bc - C2 * Norm(Vplus(Xc, mon_ind))^g2 - 
+           C1 * Norm(Vminus(Xc, mon_ind))^g1 > 0) / sigma_c^2
       
     }
     
 
     
-    muvec <- rep(0,J)
-    sigmamat <- matrix(0,J,J)
+    muvec <- rep(0, J)
+    sigmamat <- matrix(0, J, J)
     
     for(j1 in 1:J){
       for(j2 in j1:J){
         if(j1 == j2){
-          sigmamat[j1,j1] <- 1
+          sigmamat[j1, j1] <- 1
         }else{
-          sigmamat[j1,j2] <- (sum(sumpartmat_t[,j1] * sumpartmat_t[,j2]) + 
-            sum(sumpartmat_c[,j1] * sumpartmat_c[,j2])) / del^2
+          sigmamat[j1, j2] <- (sum(sumpartmat_t[, j1] * sumpartmat_t[, j2]) + 
+            sum(sumpartmat_c[, j1] * sumpartmat_c[, j2])) / del^2
             
-          sigmamat[j2,j1] <- sigmamat[j1,j2]
+          sigmamat[j2, j1] <- sigmamat[j1, j2]
         }
       }
     }
     
-    q <- maxminQ2(muvec,sigmamat,rp,simlen,tau)
+    q <- maxminQ2(muvec, sigmamat, rp, simlen, tau)
     return(q)
     
   }
   
-  r <- uniroot(f,c(rp/J,rp))
+  r <- uniroot(f, c(rp/J, rp))
   res <- r$root
   
   return(res)

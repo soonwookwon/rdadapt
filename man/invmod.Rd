@@ -9,10 +9,18 @@ invmod(b, gamma, C, X, mon_ind, sigma = 1)
 \arguments{
 \item{b}{point where the inverse modulus is evaluated at}
 
-\item{gamma}{length two vector of gammas}
+\item{gamma}{length two vector of gammas (\eqn{(\gamma_1, \gamma_2)'})}
+
+\item{C}{length two vector of Cs (\eqn{(C_1, C_2)'})}
+
+\item{X}{n\eqn{\times}k design matrix}
+
+\item{mon_ind}{indice of the monotone variables}
+
+\item{sigma}{standard deviation of the error term (either length 1 or n)}
 }
 \description{
 Calculates the inverse modulus for the regression function at a point
 problem. More specifically, this calcultes
-\eqn{\omega^{-1}(b, \Lambda(\gamma_2, C_2),\Lambda(\gamma_1, C_1)) }
+\eqn{\omega^{-1}(b, \Lambda_{\mathcal{V}+}(\gamma_2, C_2),\Lambda_{\mathcal{V}+}(\gamma_1, C_1)) }
 }
