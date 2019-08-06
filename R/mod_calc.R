@@ -30,11 +30,26 @@ invmod <- function(b, gamma, C, X, mon_ind, sigma = 1){
   return(res)
 }
 
-
+##' Invsere modulus for RDD
+##'
+##' Calculates the inverse modulus for the RDD
+##' problem. 
+##' 
+##' @param b point where the inverse modulus is evaluated at
+##' @param gamma length two vector of gammas (\eqn{(\gamma_1, \gamma_2)'})
+##' @param C length two vector of Cs (\eqn{(C_1, C_2)'})
+##' @param Xt \eqn{n_t \times k} design matrix for the treated units
+##' @param Xc \eqn{n_c \times k} design matrix for the control units
+##' @param mon_ind indice of the monotone variables
+##' @param sigma_t standard deviation of the error term for the treated units
+##' (either length 1 or \eqn{n_t})
+##' @param sigma_c standard deviation of the error term for the control units
+##' @param ret_list indicator to whether return a more detailed list of results
+##' @export
 
 invmod_RD <- function(b, gamma, C, Xt, Xc, mon_ind, sigma_t = 1, sigma_c = 1,
                      ret_list = FALSE){
-  
+  # LATER: fix this so that this returns "gf_ip_iota" and others
   # gam = (gamma_1,gamma_2)
   # C = (C_1,C_2)
   # Xt = n_t*k dimensional matrix
