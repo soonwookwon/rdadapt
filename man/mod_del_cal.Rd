@@ -2,11 +2,28 @@
 % Please edit documentation in R/mod_calc.R
 \name{mod_del_cal}
 \alias{mod_del_cal}
-\title{mod_del_cal function... see code for details (for now!)}
+\title{Modulus for adaptive RDD}
 \usage{
 mod_del_cal(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
   alpha = 0.05)
 }
+\arguments{
+\item{gamvec}{}
+
+\item{Cvec}{}
+
+\item{Xt}{}
+
+\item{Xc}{}
+
+\item{mon_ind}{}
+
+\item{sigma_t}{}
+
+\item{sigma_c}{}
+
+\item{alpha}{}
+}
 \description{
-mod_del_cal function... see code for details (for now!)
+Modulus for adaptive RDD
 }

@@ -113,8 +113,20 @@ modsol <- function(delta, gamma, C, X, mon_ind, sigma = 1){
                    tol = .Machine$double.eps^10)
   return(solve$root)
 }
+
 ##' Calculate modulus for RDD
+##'
+##' @param delta 
+##' @param gamma 
+##' @param C 
+##' @param Xt 
+##' @param Xc 
+##' @param mon_ind 
+##' @param sigma_t 
+##' @param sigma_c 
+##' @param sol_list
 ##' @export
+
 modsol_RD <- function(delta, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
                       sol_list = FALSE){
   
@@ -138,15 +150,27 @@ modsol_RD <- function(delta, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
   return(res)
 }
 
-# For RD design, given J, this function returns
-# 1) \om_t(del_adj,C_J,C_j), \om_c(del_adj,C_J,C_j), \om_t(del_adj,C_j,C_J), \om_c(del_adj,C_j,C_J) 
-# for j=1,...,J, yielding J*4 dim matrix
-# 2) del_jt^L, del_jc^L, del_jt^U, del_jc^U for j=1,...,J, yielding J*4 dim matrix
-# 3) adjusted alpha's for adaptive lower and upper CI 
-##' mod_del_cal function... see code for details (for now!)
+##' Modulus for adaptive RDD
+##' 
+##' @param gamvec 
+##' @param Cvec 
+##' @param Xt 
+##' @param Xc 
+##' @param mon_ind 
+##' @param sigma_t 
+##' @param sigma_c 
+##' @param alpha 
+##' @return 
 ##' @export
+
 mod_del_cal <- function(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
                         alpha = .05) {
+
+  # For RD design, given J, this function returns
+  # 1) \om_t(del_adj,C_J,C_j), \om_c(del_adj,C_J,C_j), \om_t(del_adj,C_j,C_J), \om_c(del_adj,C_j,C_J) 
+  # for j=1,...,J, yielding J*4 dim matrix
+  # 2) del_jt^L, del_jc^L, del_jt^U, del_jc^U for j=1,...,J, yielding J*4 dim matrix
+  # 3) adjusted alpha's for adaptive lower and upper CI 
   
   jlen <- length(gamvec)
   if (jlen == 1){   # Minimax case
@@ -204,6 +228,21 @@ mod_del_cal <- function(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
 # yielding 1*4 dim matrix
 # 2) del_jt^L, del_jc^L, del_jt^U, del_jc^U yielding 1*4 dim matrix
 
+##' mod_del_cal_orc
+##'
+##' @param gamma 
+##' @param C 
+##' @param maxgam 
+##' @param maxC 
+##' @param Xt 
+##' @param Xc 
+##' @param mon_ind 
+##' @param sigma_t 
+##' @param sigma_c 
+##' @param alpha 
+##' @return
+##' @export
+
 mod_del_cal_orc <- function(gamma, C, maxgam, maxC, Xt, Xc, mon_ind,
                             sigma_t, sigma_c, alpha = .05){
   
@@ -232,6 +271,7 @@ mod_del_cal_orc <- function(gamma, C, maxgam, maxC, Xt, Xc, mon_ind,
 
 
 # Calculates between modulus of continuity: \omega_+(\delta)
+
 
 bmodsol <- function(delta, gamma, C, X, mon_ind, sigma = 1) {
   
