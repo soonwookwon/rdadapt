@@ -1,3 +1,33 @@
+##' "Kernel" function for Kwon and Kwon (2019)
+##'
+##' This function calculates the kernel function that correponds to
+##' \eqn{\omega^{-1}(b, \Lambda_{\mathcal{V}+}(\gamma_2, C_2),\Lambda_{\mathcal{V}+}(\gamma_1, C_1)) }
+##' 
+##' @param b point where the inverse modulus is evaluated at
+##' @param gamma length two vector of gammas (\eqn{(\gamma_1, \gamma_2)'})
+##' @param C length two vector of Cs (\eqn{(C_1, C_2)'})
+##' @param X n\eqn{\times}k design matrix, the kernel is evaluated at each X[i, ]
+##' @param mon_ind indice of the monotone variables
+##' @param swap indicator of whether to swap the \code{\gamma} and \code{C}.
+
+K_fun <- function(b, gamma, C, X, mon_ind, swap = FALSE){
+
+  C1 <- C[1]
+  C2 <- C[2]
+  g1 <- gamma[1]
+  g2 <- gamma[2]
+
+  if (!swap) {
+    K <- pos(1 - (C1 / b) * Norm(Vplus(X, mon_ind))^g1 -
+               (C2 / b) * Norm(Vminus(X, mon_ind))^g2)^2   
+  } else {
+    K <- pos(1 - (C2 / b) * Norm(Vplus(X, mon_ind))^g2 -
+               (C1 / b) * Norm(Vminus(X, mon_ind))^g1)^2   
+  }
+  
+  return(K)
+}
+
 ##' Invsere modulus
 ##'
 ##' Calculates the inverse modulus for the regression function at a point
@@ -10,22 +40,17 @@
 ##' @param X n\eqn{\times}k design matrix
 ##' @param mon_ind indice of the monotone variables
 ##' @param sigma standard deviation of the error term (either length 1 or n)
+##' @export
 
-invmod <- function(b, gamma, C, X, mon_ind, sigma = 1){
+invmod <- function(b, gamma, C, X, mon_ind, sigma = 1, swap = FALSE){
 
   if (!(length(sigma) %in% c(1, nrow(X)))) {
     stop("sigma must have length 1 or n")
   }
+
+  K <- K_fun(b, gamma, C, X, mon_ind, swap = swap)
   
-  C1 <- C[1]
-  C2 <- C[2]
-  g1 <- gamma[1]
-  g2 <- gamma[2]
-  
-  res <- pos(b - C1 * Norm(Vplus(X,mon_ind))^g1 -
-               C2 * Norm(Vminus(X,mon_ind))^g2)^2 
-  
-  res <- sqrt(sum(res / sigma^2))
+  res <- b * sqrt(sum(K^2 / sigma^2))
 
   return(res)
 }
@@ -44,73 +69,65 @@ invmod <- function(b, gamma, C, X, mon_ind, sigma = 1){
 ##' @param sigma_t standard deviation of the error term for the treated units
 ##' (either length 1 or \eqn{n_t})
 ##' @param sigma_c standard deviation of the error term for the control units
-##' @param ret_list indicator to whether return a more detailed list of results
+##' @param swap indicator of whether to swap the parameter spaces
+##' 
 ##' @export
 
 invmod_RD <- function(b, gamma, C, Xt, Xc, mon_ind, sigma_t = 1, sigma_c = 1,
-                     ret_list = FALSE){
-  # LATER: fix this so that this returns "gf_ip_iota" and others
-  # gam = (gamma_1,gamma_2)
-  # C = (C_1,C_2)
-  # Xt = n_t*k dimensional matrix
-  # Xc = n_c*k dimensional matrix
-  # sigma_t can be scalar or n_t-dimensional vector for sigma(X_{t,i})
-  # sigma_c can be scalar or n_c-dimensional vector for sigma(X_{c,i})
-  # When ret_list = 0, the function returns the value of delta
-  # When ret_list = 1, the function returns the value of b_t, del_t, b_c, del_c
-  
-  C1 <- C[1]
-  C2 <- C[2]
-  g1 <- gamma[1]
-  g2 <- gamma[2]
+                      swap = FALSE){
+
+  if (swap) {
+    gamma <- gamma[2:1]
+    C <- C[2:1]
+  }
   
   ## Derivative of the square of the minization problem 
-  
   deriv_bt <- function(bt) {
-    tsum <- pos(bt - C1 * Norm(Vplus(Xt,mon_ind))^g1 -
-                  C2 * Norm(Vminus(Xt,mon_ind))^g2) /sigma_t^2
-    lhs <- sum(tsum)
-    csum <- pos(b - bt - C2 * Norm(Vplus(Xc,mon_ind))^g2 -
-                  C1 * Norm(Vminus(Xc,mon_ind))^g1) / sigma_c^2
-    rhs <- sum(csum)
-    return (lhs - rhs)
+    invom_t_der <- bt * K_fun(bt, gamma, C, Xt, mon_ind) / sigma_t^2
+    invom_t_der <- sum(invom_t_der)
+
+    invom_c_der <- (b - bt) * K_fun(b - bt, gamma, C, Xc, mon_ind, swap = TRUE) /
+      sigma_c^2
+    invom_c_der <- sum(invom_c_der)
+
+    return(invom_t_der - invom_c_der)
   }
   
   if (b == 0) {
+    
     return(0)
+    
   } else {
-    btsol <- stats::uniroot(deriv_bt, c(0, b), tol = .Machine$double.eps^10)
-    bt <- btsol$root
+
+    bt_sol <- stats::uniroot(deriv_bt, c(0, b), tol = .Machine$double.eps^10)
+
+    bt <- bt_sol$root
     
-    dt <- invmod(bt, gamma, C, Xt, mon_ind, sigma_t)
-    dc <- invmod(b - bt, gamma[2:1], C[2:1], Xc, mon_ind, sigma_c)
+    delta_t <- invmod(bt, gamma, C, Xt, mon_ind, sigma_t)
+    delta_c <- invmod(b - bt, gamma, C, Xc, mon_ind, sigma_c, swap = TRUE)
     
-    if (!ret_list) {
-      res <-  sqrt(dt^2 + dc^2)
-    } else if (ret_list) {
-      res <- list(bt = bt, dt = dt, bc = b - bt, dc = dc)
-    }
-    
+    res <- list(delta = sqrt(delta_t^2 + delta_c^2), bt = bt, delta_t = delta_t,
+                bc = b - bt, delta_c = delta_c)
     
     return(res)
   }
-  
 }
 
 
 
 # Calculates ordered modulus of continuity: \omega(\delta)
 
-modsol <- function(delta, gamma, C, X, mon_ind, sigma = 1){
+modsol <- function(delta, gamma, C, X, mon_ind, sigma = 1, swap = FALSE){
   
   maxint <- 100
   
   fun <- function(b) {
-    invmod(b, gamma, C, X, mon_ind, sigma) - delta
+    invmod(b, gamma, C, X, mon_ind, sigma)$delta - delta
   }
   
   solve <- stats::uniroot(fun, c(0, maxint), extendInt = "upX",
-                   tol = .Machine$double.eps^10)
+                          tol = .Machine$double.eps^10)
+  
   return(solve$root)
 }
 
@@ -128,24 +145,25 @@ modsol <- function(delta, gamma, C, X, mon_ind, sigma = 1){
 ##' @export
 
 modsol_RD <- function(delta, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
-                      sol_list = FALSE){
+                      swap = FALSE){
+
+  if (swap) {
+    gamma <- gamma[2:1]
+    C <- C[2:1]
+  }
   
   maxint <- 100
   
   fun <- function(b) {
-    invmod_RD(b, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c) - delta
+    invmod_RD(b, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c)$delta - delta
   }
   
   solve <- stats::uniroot(fun, c(0, maxint), extendInt = "upX",
-                   tol = .Machine$double.eps^10)
+                          tol = .Machine$double.eps^10)
+  
   bsol <- solve$root
   
-  if (!sol_list) {
-    res <- bsol
-  } else if (!sol_list) {
-    res <- invmod_RD(bsol, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
-                     ret_list = TRUE)
-  }
+  res <- invmod_RD(bsol, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c)
   
   return(res)
 }
@@ -171,54 +189,57 @@ mod_del_cal <- function(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
   # for j=1,...,J, yielding J*4 dim matrix
   # 2) del_jt^L, del_jc^L, del_jt^U, del_jc^U for j=1,...,J, yielding J*4 dim matrix
   # 3) adjusted alpha's for adaptive lower and upper CI 
+
+  J <- length(gamvec)
   
-  jlen <- length(gamvec)
-  if (jlen == 1){   # Minimax case
+  if (J == 1){   # Minimax case
     
-    del_L <- stats::qnorm(1-alpha)
+    del_L <- stats::qnorm(1 - alpha)
     alnewL <- alpha
     alnewU <- alpha
     
   } else {
     
     alnewL <- AdjAlpha_RD(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
-                          lower = TRUE, alpha = alpha)   # adjusted alphas
-    
+                          lower = TRUE, alpha = alpha) 
     alnewU <- AdjAlpha_RD(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
                           lower = FALSE, alpha = alpha)
-    del_L <- stats::qnorm(1-alnewL)   # adjusted deltas (corresponds to \delta^{adpt})
-    del_U <- stats::qnorm(1-alnewU)   
+    
+    del_L <- stats::qnorm(1 - alnewL) 
+    del_U <- stats::qnorm(1 - alnewU)   
   }
   
   
-  b_mat <- matrix(0, jlen, 4) # b_tJj, b_cJj, b_tjJ, b_cjJ 
-  d_mat <- matrix(0, jlen, 4) # Corresponding del_jt^L, del_jc^L, del_jt^U, del_jc^U
+  b_mat <- matrix(0, J, 4) # b_tJj, b_cJj, b_tjJ, b_cjJ 
+  delta_mat <- matrix(0, J, 4) # Corresponding del_jt^L, del_jc^L, del_jt^U, del_jc^U
   
-  for (j in 1:jlen) { 
-    gampair_j <- c(gamvec[j], gamvec[jlen])
-    Cpair_j <- c(Cvec[j], Cvec[jlen])
+  for (j in 1:J) {
     
-    res_l <- modsol_RD(del_L, gampair_j[2:1], Cpair_j[2:1], Xt, Xc, mon_ind,
-                       sigma_t, sigma_c, sol_list = TRUE)
+    gampair_j <- c(gamvec[j], gamvec[J])
+    Cpair_j <- c(Cvec[j], Cvec[J])
     
-    if(jlen == 1){   # minimax case
+    res_l <- modsol_RD(del_L, gampair_j, Cpair_j, Xt, Xc, mon_ind,
+                       sigma_t, sigma_c, swap = TRUE)
+    
+    if (J == 1) {   # minimax case
       
       res_u <- res_l
       
-    }else{
+    } else {
       
       res_u <- modsol_RD(del_U, gampair_j, Cpair_j, Xt, Xc, mon_ind, sigma_t,
-                         sigma_c, sol_list = 1)
+                         sigma_c)
       
     }
     
     b_mat[j, 1:2] <- c(res_l$bt, res_l$bc)
-    d_mat[j, 1:2] <- c(res_l$dt, res_l$dc)
+    delta_mat[j, 1:2] <- c(res_l$delta_t, res_l$delta_c)
     b_mat[j, 3:4] <- c(res_u$bt, res_u$bc)
-    d_mat[j, 3:4] <- c(res_u$dt, res_u$dc)
+    delta_mat[j, 3:4] <- c(res_u$delta_t, res_u$delta_c)
   }
   
-  res <- list(b_mat = b_mat, d_mat = d_mat, alnewL = alnewL, alnewU = alnewU)
+  res <- list(b_mat = b_mat, delta_mat = delta_mat, alnewL = alnewL, alnewU = alnewU)
+
   return(res)
 }
 
@@ -250,22 +271,23 @@ mod_del_cal_orc <- function(gamma, C, maxgam, maxC, Xt, Xc, mon_ind,
   del_U <- stats::qnorm(1 - alpha)
   
   b_mat <- matrix(0, 1, 4) # b_tJj, b_cJj, b_tjJ, b_cjJ 
-  d_mat <- matrix(0, 1, 4) # Corresponding del_jt^L, del_jc^L, del_jt^U, del_jc^U
+  delta_mat <- matrix(0, 1, 4) # Corresponding del_jt^L, del_jc^L, del_jt^U, del_jc^U
   
   gampair_j <- c(gamma, maxgam)
   Cpair_j <- c(C, maxC)
   
-  res_l <- modsol_RD(del_L, gampair_j[2:1], Cpair_j[2:1], Xt, Xc, mon_ind,
-                     sigma_t, sigma_c, sol_list = TRUE)
+  res_l <- modsol_RD(del_L, gampair_j, Cpair_j, Xt, Xc, mon_ind,
+                     sigma_t, sigma_c, swap = TRUE)
   res_u <- modsol_RD(del_U, gampair_j, Cpair_j, Xt, Xc, mon_ind,
-                     sigma_t, sigma_c, sol_list = TRUE)
+                     sigma_t, sigma_c)
   
   b_mat[1, 1:2] <- c(res_l$bt, res_l$bc)
-  d_mat[1, 1:2] <- c(res_l$dt, res_l$dc)
+  delta_mat[1, 1:2] <- c(res_l$delta_t, res_l$delta_c)
   b_mat[1, 3:4] <- c(res_u$bt, res_u$bc)
-  d_mat[1, 3:4] <- c(res_u$dt, res_u$dc)
+  delta_mat[1, 3:4] <- c(res_u$delta_t, res_u$delta_c)
   
-  res <- list(b_mat = b_mat, d_mat = d_mat)
+  res <- list(b_mat = b_mat, delta_mat = delta_mat)
+  
   return(res)  
 }
 
@@ -275,10 +297,10 @@ mod_del_cal_orc <- function(gamma, C, maxgam, maxC, Xt, Xc, mon_ind,
 
 bmodsol <- function(delta, gamma, C, X, mon_ind, sigma = 1) {
   
-  res1 <- modsol(delta, gamma, C, X, mon_ind, sigma)
-  res2 <- modsol(delta, gamma[c(2,1)], C[c(2,1)], X, mon_ind, sigma)
+  omega_12 <- modsol(delta, gamma, C, X, mon_ind, sigma)
+  omega_21 <- modsol(delta, gamma, C, X, mon_ind, sigma, swap = TRUE)
   
-  return(max(res1, res2))
+  return(max(omega_12, omega_21))
 }
 
 

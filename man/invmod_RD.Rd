@@ -25,7 +25,7 @@ invmod_RD(b, gamma, C, Xt, Xc, mon_ind, sigma_t = 1, sigma_c = 1,
 
 \item{sigma_c}{standard deviation of the error term for the control units}
 
-\item{ret_list}{indicator to whether return a more detailed list of results}
+\item{ret_list}{indicator of whether to return a more detailed list of results}
 }
 \description{
 Calculates the inverse modulus for the RDD

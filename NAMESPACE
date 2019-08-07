@@ -3,6 +3,7 @@
 export(AdjAlpha_RD)
 export(CI_length_RD)
 export(CI_one_sd_RD)
+export(invmod)
 export(invmod_RD)
 export(minimax_Lhat_RD)
 export(mod_del_cal)
