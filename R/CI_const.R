@@ -1,3 +1,4 @@
+# test
 CI_length <- function(b, gamma, C, X, mon_ind, sigma = 1, alpha = .05) {
   om_inv <- invmod(b, rep(gamma, 2), rep(C, 2), X, mon_ind, sigma)
 
