@@ -1,5 +1,4 @@
-CI_length <- function(b, gamma, C, X, mon_ind, sigma = 1) {
-  
+CI_length <- function(b, gamma, C, X, mon_ind, sigma = 1, alpha = .05) {
   om_inv <- invmod(b, rep(gamma, 2), rep(C, 2), X, mon_ind, sigma)
 
   if (om_inv == 0) return(Inf)
@@ -13,8 +12,8 @@ CI_length <- function(b, gamma, C, X, mon_ind, sigma = 1) {
   bias <- .5 * ( b - ( om_inv^2 / gf_ip_iota ))
   
   cva <- ifelse((bias / sd) > 3,
-                (bias / sd) + qnorm(1 - alpha),
-                sqrt(qchisq(1 - alpha, df = 1, ncp = (bias / sd)^2)))
+                (bias / sd) + stats::qnorm(1 - alpha),
+                sqrt(stats::qchisq(1 - alpha, df = 1, ncp = (bias / sd)^2)))
   
   return( 2 * cva * sd)
 }
@@ -61,8 +60,8 @@ CI_length_RD <- function(b, gamma, C, Xt, Xc, mon_ind, sigma_t = 1, sigma_c = 1,
   
   bias <- .5 * (b - (om_inv^2 /  (gf_ip_iota_t + gf_ip_iota_c)))
   cva <- ifelse(abs(bias / sd) > 3,
-                abs(bias / sd) + qnorm(1 - alpha),
-                sqrt(qchisq(1 - alpha, df = 1, ncp = (bias / sd)^2)))
+                abs(bias / sd) + stats::qnorm(1 - alpha),
+                sqrt(stats::qchisq(1 - alpha, df = 1, ncp = (bias / sd)^2)))
   
   return(2 * cva * sd)
 }
@@ -122,7 +121,8 @@ minimax_Lhat_RD <- function(b, gamma, C, Xt, Xc, Yt, Yc, mon_ind,
 
 
 CI_one_sd <- function(bpairmat, delta, gamma, C, X, mon_ind, sigma, y, lower, al,
-                      Dir = FALSE, maxQ = FALSE, simlen = 5e04, qres = FALSE){
+                      Dir = FALSE, maxQ = FALSE, simlen = 5e04, qres = FALSE,
+                      alpha = .05){
   
   # bpairmat[j,] = (omega(del,F_J,F_j, omega(del,F_j,F_J)) 
   # where delta is given by sigma*(z_beta + z_{1-al/(2J)})
@@ -149,7 +149,7 @@ CI_one_sd <- function(bpairmat, delta, gamma, C, X, mon_ind, sigma, y, lower, al
       b <- bpairmat[j, 1]
       C1 <- C[J]
       C2 <- C[j]
-      g1 <- gamm[J]
+      g1 <- gamma[J]
       g2 <- gamma[j]
     } else {
       b <- bpairmat[j, 2]
@@ -177,12 +177,12 @@ CI_one_sd <- function(bpairmat, delta, gamma, C, X, mon_ind, sigma, y, lower, al
     
     Ubias <- .5 * (b - delta * omega_der)
     # chat <- ifelse(lower == TRUE,
-    #               Lhat - Ubias - qnorm(1-al)*sigma*ompr,
-    #               -(Lhat - Ubias - qnorm(1-al)*sigma*ompr))
+    #               Lhat - Ubias - stats::qnorm(1-al)*sigma*ompr,
+    #               -(Lhat - Ubias - stats::qnorm(1-al)*sigma*ompr))
     
     chat <- ifelse(lower == TRUE,
-                  Lhat - Ubias - qnorm(1 - al) * omega_der,
-                  Lhat + Ubias + qnorm(1 - al) * omega_der)
+                  Lhat - Ubias - stats::qnorm(1 - al) * omega_der,
+                  Lhat + Ubias + stats::qnorm(1 - al) * omega_der)
     
     chatvec[j] <- chat
     
@@ -195,7 +195,7 @@ CI_one_sd <- function(bpairmat, delta, gamma, C, X, mon_ind, sigma, y, lower, al
   
   if (maxQ == T) {
     
-    muvec <- ifelse(lower==T, qnorm(al), qnorm(1 - al)) * omprvec
+    muvec <- ifelse(lower==T, stats::qnorm(al), stats::qnorm(1 - al)) * omprvec
     sigmamat <- matrix(0, J, J)
 
     for (j1 in 1:J) {
@@ -235,8 +235,12 @@ CI_one_sd <- function(bpairmat, delta, gamma, C, X, mon_ind, sigma, y, lower, al
 ##' @param C2 \eqn{C_2}
 ##' @param g1 \eqn{\gamma_1}
 ##' @param g2 \eqn{\gamma_2}
+##' @param X design matrix
+##' @param mon_ind
+##' @param sigma
+##' @param y
 
-Lhatfun <- function(b, C1, C2, g1, g2, X, sigma, y){
+Lhatfun <- function(b, C1, C2, g1, g2, X, mon_ind, sigma, y){
 
   f1_minus_f2 <- pos(b - C1 * Norm(Vplus(X, mon_ind))^g1 - 
                        C2 * Norm(Vminus(X, mon_ind))^g2) / sigma
@@ -319,8 +323,8 @@ CI_one_sd_RD <- function(bpairmat, dmat, gamma, C, Xt, Xc, mon_ind,
       g2 <- gamma[J]
     } 
     
-    Lhat_t_res <- Lhatfun(bt, C1, C2, g1, g2, Xt, sigma_t, yt)
-    Lhat_c_res <- Lhatfun(bc, C2, C1, g2, g1, Xc, sigma_c, yc)
+    Lhat_t_res <- Lhatfun(bt, C1, C2, g1, g2, Xt, mon_ind, sigma_t, yt)
+    Lhat_c_res <- Lhatfun(bc, C2, C1, g2, g1, Xc, mon_ind, sigma_c, yc)
     
     omega_der_t <- delta_t / Lhat_t_res[2]
     omega_der_c <- delta_c / Lhat_c_res[2]
@@ -329,8 +333,8 @@ CI_one_sd_RD <- function(bpairmat, dmat, gamma, C, Xt, Xc, mon_ind,
     Lhat <- Lhat_t_res[1] - Lhat_c_res[1]
     
     chat <- ifelse(lower == TRUE, 
-                  Lhat - 0.5 * ((bt + bc) + qnorm(1 - al) * omega_der), 
-                  Lhat + 0.5 * ((bt + bc) + qnorm(1 - al) * omega_der))
+                  Lhat - 0.5 * ((bt + bc) + stats::qnorm(1 - al) * omega_der), 
+                  Lhat + 0.5 * ((bt + bc) + stats::qnorm(1 - al) * omega_der))
     
     
     chatvec[j] <- chat
@@ -345,14 +349,15 @@ CI_one_sd_RD <- function(bpairmat, dmat, gamma, C, Xt, Xc, mon_ind,
 }
 
 
-AdjAlpha <- function(gamma, C, X, sigma, mon_ind, lower, simlen = 1e04){
+AdjAlpha <- function(gamma, C, X, sigma, mon_ind, lower, simlen = 1e04,
+                     alpha = .05){
   
   J <- length(gamma)
   n <- length(X[, 1])
   
   f <- function(a) {
     
-    del_adpt <- qnorm(1 - a)
+    del_adpt <- stats::qnorm(1 - a)
     b_mat_bon <- matrix(0, J, 2)
     
     for(j in 1:J){
@@ -396,7 +401,7 @@ AdjAlpha <- function(gamma, C, X, sigma, mon_ind, lower, simlen = 1e04){
       
     }
       
-    muvec <- ifelse(lower==T,  qnorm(a),  qnorm(1-a)) * omprvec
+    muvec <- ifelse(lower==T,  stats::qnorm(a),  stats::qnorm(1-a)) * omprvec
     sigmamat <- matrix(0, J, J)
     
     for (j1 in 1:J) {
@@ -404,7 +409,7 @@ AdjAlpha <- function(gamma, C, X, sigma, mon_ind, lower, simlen = 1e04){
         if (j1 == j2) {
           sigmamat[j1, j1] <- omprvec[j1]^2
         } else {
-          sigmamat[j1, j2] <- (omprvec[j1] * omprvec[j2] / del^2) *
+          sigmamat[j1, j2] <- (omprvec[j1] * omprvec[j2] / delta^2) *
             sum(sumpartmat[, j1] * sumpartmat[, j2])
           sigmamat[j2, j1] <- sigmamat[j1, j2]
         }
@@ -415,7 +420,7 @@ AdjAlpha <- function(gamma, C, X, sigma, mon_ind, lower, simlen = 1e04){
     return(q)
   }
     
-  r <- uniroot(f, c(alpha / (2 * J), alpha / 2))
+  r <- stats::uniroot(f, c(alpha / (2 * J), alpha / 2))
   res <- r$root
   
   return(res)
@@ -424,14 +429,15 @@ AdjAlpha <- function(gamma, C, X, sigma, mon_ind, lower, simlen = 1e04){
 
 
 # Adjust alpha for lower and upper together
-AdjAlpha2 <- function(gamma, C, X, sigma, mon_ind, simlen = 1e04) {
+AdjAlpha2 <- function(gamma, C, X, sigma, mon_ind, simlen = 1e04,
+                      alpha = .05) {
   
   J <- length(gamma)
   n <- length(X[, 1])
   
   f <- function(a){
     
-    del_adpt <- qnorm(1 - a)
+    del_adpt <- stats::qnorm(1 - a)
     b_mat_bon <- matrix(0, J, 2)
     
     for(j in 1:J){
@@ -486,7 +492,7 @@ AdjAlpha2 <- function(gamma, C, X, sigma, mon_ind, simlen = 1e04) {
     omprvec <- c(omprvecL, omprvecU)
     sumpartmat <- cbind(sumpartmatL, -sumpartmatU)
     
-    muvec <- qnorm(a) * omprvec
+    muvec <- stats::qnorm(a) * omprvec
     sigmamat <- matrix(0, 2 * J, 2 * J)
     
     for (j1 in 1:(2 * J)) {
@@ -506,7 +512,7 @@ AdjAlpha2 <- function(gamma, C, X, sigma, mon_ind, simlen = 1e04) {
     
   }
   
-  r <- uniroot(f, c(alpha / (2 * J), alpha))
+  r <- stats::uniroot(f, c(alpha / (2 * J), alpha))
   res <- r$root
   
   return(res) 
@@ -530,7 +536,7 @@ AdjAlpha2 <- function(gamma, C, X, sigma, mon_ind, simlen = 1e04) {
 
 
 AdjAlpha_RD <- function(gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c, lower,
-                        simlen = 1e04, rp = alpha){
+                        simlen = 1e04, alpha = .05){
   
   J <- length(gamma)
   nt <- length(Xt[, 1])
@@ -538,7 +544,7 @@ AdjAlpha_RD <- function(gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c, lower,
   
   f <- function(tau){
     
-    delta <- qnorm(1 - tau)
+    delta <- stats::qnorm(1 - tau)
     b_mat_bon <- matrix(0, J, 2)
     
     sumpartmat_t <- matrix(0, nt, J)
@@ -588,12 +594,12 @@ AdjAlpha_RD <- function(gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c, lower,
       }
     }
     
-    q <- maxminQ2(muvec, sigmamat, rp, simlen, tau)
+    q <- maxminQ2(muvec, sigmamat, alpha, simlen, tau)
     return(q)
     
   }
   
-  r <- uniroot(f, c(rp / J, rp))
+  r <- stats::uniroot(f, c(alpha / J, alpha))
   res <- r$root
   
   return(res)

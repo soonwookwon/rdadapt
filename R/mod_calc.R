@@ -79,11 +79,11 @@ invmod_RD <- function(b, gamma, C, Xt, Xc, mon_ind, sigma_t = 1, sigma_c = 1,
   if (b == 0) {
     return(0)
   } else {
-    btsol <- uniroot(deriv_bt, c(0, b), tol = .Machine$double.eps^10)
+    btsol <- stats::uniroot(deriv_bt, c(0, b), tol = .Machine$double.eps^10)
     bt <- btsol$root
     
     dt <- invmod(bt, gamma, C, Xt, mon_ind, sigma_t)
-    dc <- invmod(b - bt, gam[2:1], C[2:1], Xc, mon_ind, sigma_c)
+    dc <- invmod(b - bt, gamma[2:1], C[2:1], Xc, mon_ind, sigma_c)
     
     if (!ret_list) {
       res <-  sqrt(dt^2 + dc^2)
@@ -106,10 +106,10 @@ modsol <- function(delta, gamma, C, X, mon_ind, sigma = 1){
   maxint <- 100
   
   fun <- function(b) {
-    invmod(b, gamma, C, X, mon_ind, sigma) - del
+    invmod(b, gamma, C, X, mon_ind, sigma) - delta
   }
   
-  solve <- uniroot(fun, c(0, maxint), extendInt = "upX",
+  solve <- stats::uniroot(fun, c(0, maxint), extendInt = "upX",
                    tol = .Machine$double.eps^10)
   return(solve$root)
 }
@@ -120,10 +120,10 @@ modsol_RD <- function(delta, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
   maxint <- 100
   
   fun <- function(b) {
-    invmod_RD(b, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c) - del
+    invmod_RD(b, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c) - delta
   }
   
-  solve <- uniroot(fun, c(0, maxint), extendInt="upX",
+  solve <- stats::uniroot(fun, c(0, maxint), extendInt = "upX",
                    tol = .Machine$double.eps^10)
   bsol <- solve$root
   
@@ -148,19 +148,19 @@ mod_del_cal <- function(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
   jlen <- length(gamvec)
   if (jlen == 1){   # Minimax case
     
-    del_L <- qnorm(1-alpha)
+    del_L <- stats::qnorm(1-alpha)
     alnewL <- alpha
     alnewU <- alpha
     
   } else {
     
     alnewL <- AdjAlpha_RD(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
-                          lower = TRUE, rp = alpha)   # adjusted alphas
+                          lower = TRUE, alpha = alpha)   # adjusted alphas
     
     alnewU <- AdjAlpha_RD(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
-                          lower = FALSE, rp = alpha)
-    del_L <- qnorm(1-alnewL)   # adjusted deltas (corresponds to \delta^{adpt})
-    del_U <- qnorm(1-alnewU)   
+                          lower = FALSE, alpha = alpha)
+    del_L <- stats::qnorm(1-alnewL)   # adjusted deltas (corresponds to \delta^{adpt})
+    del_U <- stats::qnorm(1-alnewU)   
   }
   
   
@@ -202,15 +202,15 @@ mod_del_cal <- function(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
 # 2) del_jt^L, del_jc^L, del_jt^U, del_jc^U yielding 1*4 dim matrix
 
 mod_del_cal_orc <- function(gamma, C, maxgam, maxC, Xt, Xc, mon_ind,
-                            sigma_t, sigma_c){
+                            sigma_t, sigma_c, alpha = .05){
   
-  del_L <- qnorm(1-alpha)
-  del_U <- qnorm(1-alpha)
+  del_L <- stats::qnorm(1 - alpha)
+  del_U <- stats::qnorm(1 - alpha)
   
   b_mat <- matrix(0, 1, 4) # b_tJj, b_cJj, b_tjJ, b_cjJ 
   d_mat <- matrix(0, 1, 4) # Corresponding del_jt^L, del_jc^L, del_jt^U, del_jc^U
   
-  gampair_j <- c(gam, maxgam)
+  gampair_j <- c(gamma, maxgam)
   Cpair_j <- c(C, maxC)
   
   res_l <- modsol_RD(del_L, gampair_j[2:1], Cpair_j[2:1], Xt, Xc, mon_ind,
@@ -233,7 +233,7 @@ mod_del_cal_orc <- function(gamma, C, maxgam, maxC, Xt, Xc, mon_ind,
 bmodsol <- function(delta, gamma, C, X, mon_ind, sigma = 1) {
   
   res1 <- modsol(delta, gamma, C, X, mon_ind, sigma)
-  res2 <- modsol(delta, gam[c(2,1)], C[c(2,1)], X, mon_ind, sigma)
+  res2 <- modsol(delta, gamma[c(2,1)], C[c(2,1)], X, mon_ind, sigma)
   
   return(max(res1, res2))
 }

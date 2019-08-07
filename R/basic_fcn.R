@@ -10,12 +10,12 @@ Norm <- function(X, p = 2, invw = 1) {
   n <- nrow(X)
   k <- ncol(X)
 
-  invw <- matrix(rep(invw, each = n), nrow = n, ncol = x )
+  invw <- matrix(rep(invw, each = n), nrow = n, ncol = k)
   Xw = X / invw
  
   return(rowSums(abs(Xw)^p)^(1/p))
 }
-
+q
 Vplus <- function(X, kplus_ind) {
 
   Xplus <- X
@@ -30,13 +30,13 @@ Vminus <- function(X, kplus_ind) {
 
 maxminQ <- function(mu, sigma, alpha, simlen, Lower){
   
-  simdata <- mvrnorm(n = simlen, mu, sigma)
+  simdata <- MASS::mvrnorm(n = simlen, mu, sigma)
   if(Lower == T){
     maxvec <- apply(simdata, 1, max)
-    res <- quantile(maxvec, 1-alpha)
+    res <- stats::quantile(maxvec, 1-alpha)
   }else{
     minvec <- apply(simdata, 1, min)
-    res <- quantile(minvec, alpha)
+    res <- stats::quantile(minvec, alpha)
   }
 
   return(res)
@@ -45,14 +45,11 @@ maxminQ <- function(mu, sigma, alpha, simlen, Lower){
 
 maxminQ2 <- function(mu, sigma, alpha, simlen, tau){
   
-  simdata <- mvrnorm(n = simlen, mu, sigma)
-  
+  simdata <- MASS::mvrnorm(n = simlen, mu, sigma)
   maxvec <- apply(simdata, 1, max)
-  res <- quantile(maxvec, 1-alpha)
+  res <- stats::quantile(maxvec, 1 - alpha)
   
-  
-  return(res - qnorm(1-tau))
-  
+  return(res - stats::qnorm(1 - tau))
 }
 
 gridFun <- function(min_C, max_C, num_grid, J_max, k){
