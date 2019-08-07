@@ -113,7 +113,8 @@ modsol <- function(delta, gamma, C, X, mon_ind, sigma = 1){
                    tol = .Machine$double.eps^10)
   return(solve$root)
 }
-##'@export
+##' Calculate modulus for RDD
+##' @export
 modsol_RD <- function(delta, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
                       sol_list = FALSE){
   
@@ -142,7 +143,8 @@ modsol_RD <- function(delta, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
 # for j=1,...,J, yielding J*4 dim matrix
 # 2) del_jt^L, del_jc^L, del_jt^U, del_jc^U for j=1,...,J, yielding J*4 dim matrix
 # 3) adjusted alpha's for adaptive lower and upper CI 
-##'@export
+##' mod_del_cal function... see code for details (for now!)
+##' @export
 mod_del_cal <- function(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
                         alpha = .05) {
   
