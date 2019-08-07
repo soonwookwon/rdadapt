@@ -1,7 +1,7 @@
 ##' "Kernel" function for Kwon and Kwon (2019)
 ##'
 ##' This function calculates the kernel function that correponds to
-##' \eqn{\omega^{-1}(b, \Lambda_{\mathcal{V}+}(\gamma_2, C_2),\Lambda_{\mathcal{V}+}(\gamma_1, C_1)) }
+##' \eqn{\omega^{-1}(b, \Lambda_{\mathcal{V}+}(\gamma_1, C_1),\Lambda_{\mathcal{V}+}(\gamma_2, C_2)) }
 ##' 
 ##' @param b point where the inverse modulus is evaluated at
 ##' @param gamma length two vector of gammas (\eqn{(\gamma_1, \gamma_2)'})
@@ -12,18 +12,13 @@
 
 K_fun <- function(b, gamma, C, X, mon_ind, swap = FALSE){
 
-  C1 <- C[1]
-  C2 <- C[2]
-  g1 <- gamma[1]
-  g2 <- gamma[2]
-
-  if (!swap) {
-    K <- pos(1 - (C1 / b) * Norm(Vplus(X, mon_ind))^g1 -
-               (C2 / b) * Norm(Vminus(X, mon_ind))^g2)^2   
-  } else {
-    K <- pos(1 - (C2 / b) * Norm(Vplus(X, mon_ind))^g2 -
-               (C1 / b) * Norm(Vminus(X, mon_ind))^g1)^2   
+  if (swap) {
+    gamma <- gamma[2:1]
+    C <- C[2:1]
   }
+
+  K <- pos(1 - (C[2] / b) * Norm(Vplus(X, mon_ind))^gamma[2] -
+             (C[1] / b) * Norm(Vminus(X, mon_ind))^gamma[1])^2
   
   return(K)
 }
@@ -32,7 +27,7 @@ K_fun <- function(b, gamma, C, X, mon_ind, swap = FALSE){
 ##'
 ##' Calculates the inverse modulus for the regression function at a point
 ##' problem. More specifically, this calcultes
-##' \eqn{\omega^{-1}(b, \Lambda_{\mathcal{V}+}(\gamma_2, C_2),\Lambda_{\mathcal{V}+}(\gamma_1, C_1)) }
+##' \eqn{\omega^{-1}(b, \Lambda_{\mathcal{V}+}(\gamma_1, C_1),\Lambda_{\mathcal{V}+}(\gamma_2, C_2)) }
 ##' 
 ##' @param b point where the inverse modulus is evaluated at
 ##' @param gamma length two vector of gammas (\eqn{(\gamma_1, \gamma_2)'})
@@ -83,14 +78,14 @@ invmod_RD <- function(b, gamma, C, Xt, Xc, mon_ind, sigma_t = 1, sigma_c = 1,
   
   ## Derivative of the square of the minization problem 
   deriv_bt <- function(bt) {
-    invom_t_der <- bt * K_fun(bt, gamma, C, Xt, mon_ind) / sigma_t^2
-    invom_t_der <- sum(invom_t_der)
+    om_inv_t_der <- bt * K_fun(bt, gamma, C, Xt, mon_ind) / sigma_t^2
+    om_inv_t_der <- sum(om_inv_t_der)
 
-    invom_c_der <- (b - bt) * K_fun(b - bt, gamma, C, Xc, mon_ind, swap = TRUE) /
+    om_inv_c_der <- (b - bt) * K_fun(b - bt, gamma, C, Xc, mon_ind, swap = TRUE) /
       sigma_c^2
-    invom_c_der <- sum(invom_c_der)
+    om_inv_c_der <- sum(om_inv_c_der)
 
-    return(invom_t_der - invom_c_der)
+    return(om_inv_t_der - om_inv_c_der)
   }
   
   if (b == 0) {
@@ -119,7 +114,7 @@ invmod_RD <- function(b, gamma, C, Xt, Xc, mon_ind, sigma_t = 1, sigma_c = 1,
 
 modsol <- function(delta, gamma, C, X, mon_ind, sigma = 1, swap = FALSE){
   
-  maxint <- 100
+  maxint <- 100 # fix this
   
   fun <- function(b) {
     invmod(b, gamma, C, X, mon_ind, sigma)$delta - delta
@@ -170,7 +165,7 @@ modsol_RD <- function(delta, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
 
 ##' Modulus for adaptive RDD
 ##' 
-##' @param gamvec 
+##' @param gamvec  
 ##' @param Cvec 
 ##' @param Xt 
 ##' @param Xc 
@@ -178,7 +173,6 @@ modsol_RD <- function(delta, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
 ##' @param sigma_t 
 ##' @param sigma_c 
 ##' @param alpha 
-##' @return 
 ##' @export
 
 mod_del_cal <- function(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
@@ -215,22 +209,13 @@ mod_del_cal <- function(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
   
   for (j in 1:J) {
     
-    gampair_j <- c(gamvec[j], gamvec[J])
-    Cpair_j <- c(Cvec[j], Cvec[J])
+    gampair_j <- c(gamvec[J], gamvec[j])
+    Cpair_j <- c(Cvec[J], Cvec[j])
     
     res_l <- modsol_RD(del_L, gampair_j, Cpair_j, Xt, Xc, mon_ind,
-                       sigma_t, sigma_c, swap = TRUE)
-    
-    if (J == 1) {   # minimax case
-      
-      res_u <- res_l
-      
-    } else {
-      
-      res_u <- modsol_RD(del_U, gampair_j, Cpair_j, Xt, Xc, mon_ind, sigma_t,
-                         sigma_c)
-      
-    }
+                       sigma_t, sigma_c)
+    res_u <- modsol_RD(del_U, gampair_j, Cpair_j, Xt, Xc, mon_ind, sigma_t,
+                       sigma_c, swap = TRUE)
     
     b_mat[j, 1:2] <- c(res_l$bt, res_l$bc)
     delta_mat[j, 1:2] <- c(res_l$delta_t, res_l$delta_c)
@@ -238,7 +223,8 @@ mod_del_cal <- function(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
     delta_mat[j, 3:4] <- c(res_u$delta_t, res_u$delta_c)
   }
   
-  res <- list(b_mat = b_mat, delta_mat = delta_mat, alnewL = alnewL, alnewU = alnewU)
+  res <- list(b_mat = b_mat, delta_mat = delta_mat, alnewL = alnewL,
+              alnewU = alnewU)
 
   return(res)
 }
@@ -264,17 +250,14 @@ mod_del_cal <- function(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
 ##' @return
 ##' @export
 
-mod_del_cal_orc <- function(gamma, C, maxgam, maxC, Xt, Xc, mon_ind,
-                            sigma_t, sigma_c, alpha = .05){
+mod_del_cal_orc <- function(gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
+                            alpha = .05){
   
   del_L <- stats::qnorm(1 - alpha)
   del_U <- stats::qnorm(1 - alpha)
   
   b_mat <- matrix(0, 1, 4) # b_tJj, b_cJj, b_tjJ, b_cjJ 
   delta_mat <- matrix(0, 1, 4) # Corresponding del_jt^L, del_jc^L, del_jt^U, del_jc^U
-  
-  gampair_j <- c(gamma, maxgam)
-  Cpair_j <- c(C, maxC)
   
   res_l <- modsol_RD(del_L, gampair_j, Cpair_j, Xt, Xc, mon_ind,
                      sigma_t, sigma_c, swap = TRUE)

@@ -5,7 +5,7 @@
 \title{Calculate modulus for RDD}
 \usage{
 modsol_RD(delta, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
-  sol_list = FALSE)
+  swap = FALSE)
 }
 \arguments{
 \item{delta}{}

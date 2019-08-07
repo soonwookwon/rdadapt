@@ -4,7 +4,7 @@
 \alias{invmod}
 \title{Invsere modulus}
 \usage{
-invmod(b, gamma, C, X, mon_ind, sigma = 1)
+invmod(b, gamma, C, X, mon_ind, sigma = 1, swap = FALSE)
 }
 \arguments{
 \item{b}{point where the inverse modulus is evaluated at}
@@ -22,5 +22,5 @@ invmod(b, gamma, C, X, mon_ind, sigma = 1)
 \description{
 Calculates the inverse modulus for the regression function at a point
 problem. More specifically, this calcultes
-\eqn{\omega^{-1}(b, \Lambda_{\mathcal{V}+}(\gamma_2, C_2),\Lambda_{\mathcal{V}+}(\gamma_1, C_1)) }
+\eqn{\omega^{-1}(b, \Lambda_{\mathcal{V}+}(\gamma_1, C_1),\Lambda_{\mathcal{V}+}(\gamma_2, C_2)) }
 }

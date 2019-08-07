@@ -4,7 +4,7 @@
 \alias{Lhatfun}
 \title{Estimator used in constructing adaptive CIs for RDD}
 \usage{
-Lhatfun(b, C1, C2, g1, g2, X, mon_ind, sigma, y)
+Lhatfun(b, C1, C2, g1, g2, X, Y, mon_ind, sigma)
 }
 \arguments{
 \item{b}{point where the inverse modulus is evaluated at}
@@ -20,7 +20,8 @@ Lhatfun(b, C1, C2, g1, g2, X, mon_ind, sigma, y)
 \item{X}{design matrix}
 }
 \description{
-Calculates the estimator that is used to construct the adaptive
-CI for RDD. The estimator corresponds to the inverse modulus
-\eqn{\omega^{-1}(b, \Lambda_{\mathcal{V}+}(\gamma_2, C_2),\Lambda_{\mathcal{V}+}(\gamma_1, C_1)) }
+Calculates the estimator that is used to construct the adaptive CI for RDD
+(or the regression function at a point problem). The estimator corresponds
+to the inverse modulus \eqn{\omega^{-1}(b, \Lambda_{\mathcal{V}+}(\gamma_2,
+C_2),\Lambda_{\mathcal{V}+}(\gamma_1, C_1)) }
 }

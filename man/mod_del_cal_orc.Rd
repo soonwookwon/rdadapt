@@ -4,17 +4,13 @@
 \alias{mod_del_cal_orc}
 \title{mod_del_cal_orc}
 \usage{
-mod_del_cal_orc(gamma, C, maxgam, maxC, Xt, Xc, mon_ind, sigma_t, sigma_c,
+mod_del_cal_orc(gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
   alpha = 0.05)
 }
 \arguments{
 \item{gamma}{}
 
 \item{C}{}
-
-\item{maxgam}{}
-
-\item{maxC}{}
 
 \item{Xt}{}
 
@@ -27,6 +23,10 @@ mod_del_cal_orc(gamma, C, maxgam, maxC, Xt, Xc, mon_ind, sigma_t, sigma_c,
 \item{sigma_c}{}
 
 \item{alpha}{}
+
+\item{maxgam}{}
+
+\item{maxC}{}
 }
 \description{
 mod_del_cal_orc

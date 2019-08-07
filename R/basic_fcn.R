@@ -15,7 +15,7 @@ Norm <- function(X, p = 2, invw = 1) {
  
   return(rowSums(abs(Xw)^p)^(1/p))
 }
-q
+
 Vplus <- function(X, kplus_ind) {
 
   Xplus <- X
@@ -28,13 +28,14 @@ Vminus <- function(X, kplus_ind) {
   return(Vplus(-X, kplus_ind))
 }
 
-maxminQ <- function(mu, sigma, alpha, simlen, Lower){
+maxminQ <- function(mu, sigma, alpha, simlen, lower){
   
   simdata <- MASS::mvrnorm(n = simlen, mu, sigma)
-  if(Lower == T){
+  
+  if (lower == T) {
     maxvec <- apply(simdata, 1, max)
     res <- stats::quantile(maxvec, 1-alpha)
-  }else{
+  } else {
     minvec <- apply(simdata, 1, min)
     res <- stats::quantile(minvec, alpha)
   }

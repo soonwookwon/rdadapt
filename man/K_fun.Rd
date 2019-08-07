@@ -21,5 +21,5 @@ K_fun(b, gamma, C, X, mon_ind, swap = FALSE)
 }
 \description{
 This function calculates the kernel function that correponds to
-\eqn{\omega^{-1}(b, \Lambda_{\mathcal{V}+}(\gamma_2, C_2),\Lambda_{\mathcal{V}+}(\gamma_1, C_1)) }
+\eqn{\omega^{-1}(b, \Lambda_{\mathcal{V}+}(\gamma_1, C_1),\Lambda_{\mathcal{V}+}(\gamma_2, C_2)) }
 }

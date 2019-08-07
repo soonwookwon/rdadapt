@@ -5,7 +5,7 @@
 \title{Invsere modulus for RDD}
 \usage{
 invmod_RD(b, gamma, C, Xt, Xc, mon_ind, sigma_t = 1, sigma_c = 1,
-  ret_list = FALSE)
+  swap = FALSE)
 }
 \arguments{
 \item{b}{point where the inverse modulus is evaluated at}
@@ -25,7 +25,7 @@ invmod_RD(b, gamma, C, Xt, Xc, mon_ind, sigma_t = 1, sigma_c = 1,
 
 \item{sigma_c}{standard deviation of the error term for the control units}
 
-\item{ret_list}{indicator of whether to return a more detailed list of results}
+\item{swap}{indicator of whether to swap the parameter spaces}
 }
 \description{
 Calculates the inverse modulus for the RDD

@@ -1,13 +1,27 @@
-# test
+##' Minimax CI length for regression function at a point
+##'
+##' This function calculates the minimax CI length for the regression function
+##' at a point problem
+##' 
+##' @param b 
+##' @param gamma 
+##' @param C 
+##' @param X 
+##' @param mon_ind 
+##' @param sigma 
+##' @param alpha
+##' @export
+
 CI_length <- function(b, gamma, C, X, mon_ind, sigma = 1, alpha = .05) {
+
   om_inv <- invmod(b, rep(gamma, 2), rep(C, 2), X, mon_ind, sigma)
 
-  if (om_inv == 0) return(Inf)
-  
-  gf_ip_iota <- pos(b - C * Norm(Vplus(X,mon_ind))^gamma -
-                      C * Norm(Vminus(X,mon_ind))^gamma) / sigma
-  
-  gf_ip_iota <- sum(gf_ip_iota)
+  if (om_inv == 0) {
+    return(Inf)
+  }
+
+  K <- K_fun(b, gamma, C, X, mon_ind)
+  gf_ip_iota <- sum(b * K / sigma^2)
   
   sd <- om_inv / gf_ip_iota
   bias <- .5 * ( b - ( om_inv^2 / gf_ip_iota ))
@@ -16,7 +30,7 @@ CI_length <- function(b, gamma, C, X, mon_ind, sigma = 1, alpha = .05) {
                 (bias / sd) + stats::qnorm(1 - alpha),
                 sqrt(stats::qchisq(1 - alpha, df = 1, ncp = (bias / sd)^2)))
   
-  return( 2 * cva * sd)
+  return(2 * cva * sd)
 }
 
 ##' Length of minimax CI for the RDD
@@ -39,25 +53,23 @@ CI_length_RD <- function(b, gamma, C, Xt, Xc, mon_ind, sigma_t = 1, sigma_c = 1,
                          alpha = .05) {
   
   om_inv <- invmod_RD(b, rep(gamma,2), rep(C,2), Xt, Xc, mon_ind = mon_ind,
-                      sigma_t = sigma_t, sigma_c = sigma_c, ret_list = TRUE)
+                      sigma_t = sigma_t, sigma_c = sigma_c)
 
   bc <- om_inv$bc
   bt <- om_inv$bt
-  ominv_t <- om_inv$dt 
-  ominv_c <- om_inv$dc
-  om_inv <- sqrt((ominv_t)^2 + (ominv_c)^2)
+  om_inv_t <- om_inv$delta_t 
+  om_inv_c <- om_inv$delta_c
+  om_inv <- om_inv$delta
     
   if (om_inv == 0) return(Inf)
+
+  Kt <- K_fun(bt, gamma, C, Xt, mon_ind)
+  gf_ip_iota_t <- sum(bt * Kt / sigma_t^2)
+
+  Kc <- K_fun(bc, gamma, C, Xc, mon_ind)
+  gf_ip_iota_c <- sum(bc * Kc / sigma_c^2)
   
-  gf_ip_iota_t <- pos(bt - C * Norm(Vplus(Xt,mon_ind))^gamma -
-                        C * Norm(Vminus(Xt,mon_ind))^gamma) / sigma_t
-  gf_ip_iota_t <- sum(gf_ip_iota_t)
-  
-  gf_ip_iota_c <- pos(bc - C * Norm(Vplus(Xc,mon_ind))^gamma -
-                        C * Norm(Vminus(Xc,mon_ind))^gamma) / sigma_c
-  gf_ip_iota_c <- sum(gf_ip_iota_c)
-  
-  sd <- sqrt((ominv_t/gf_ip_iota_t)^2 + (ominv_c/gf_ip_iota_c)^2)
+  sd <- sqrt((om_inv_t/gf_ip_iota_t)^2 + (om_inv_c/gf_ip_iota_c)^2)
   
   bias <- .5 * (b - (om_inv^2 /  (gf_ip_iota_t + gf_ip_iota_c)))
   cva <- ifelse(abs(bias / sd) > 3,
@@ -67,11 +79,33 @@ CI_length_RD <- function(b, gamma, C, Xt, Xc, mon_ind, sigma_t = 1, sigma_c = 1,
   return(2 * cva * sd)
 }
 
+##' Estimator used in constructing the minimax (or adaptive) CIs 
+##'
+##' Calculates the estimator used in constructing then minimax (or adaptive) CIs
+##' for the regression function at a point problem. Again, the
+##' estimator corresponds to \eqn{\omega^{-1}(b,
+##' \Lambda_{\mathcal{V}+}(\gamma_2, C_2),\Lambda_{\mathcal{V}+}(\gamma_1, C_1))
+##' }
+##' 
+##' 
+##' @param b 
+##' @param gamma 
+##' @param C 
+##' @param X 
+##' @param mon_ind 
+##' @param sigma 
+##' @param Y 
+##' @param swap 
+##' @export
+Lhat_fun <- function(b, gamma, C, X, mon_ind, sigma, Y, swap = FALSE) {
 
-minimax_Lhat <- function(b, gamma, C, X, Y, mon_ind, sigma) {
+  if (swap) {
+    gamma <- gamma[2:1]
+    C <- C[2:1]
+  } 
   
-  f1 <- C * Norm(Vplus(X, mon_ind))^gamma
-  f2 <- pmax(b - C * Norm(Vminus(X, mon_ind))^gamma, f1)
+  f1 <- C[1] * Norm(Vplus(X, mon_ind))^gamma[1]
+  f2 <- pmax(b - C[2] * Norm(Vminus(X, mon_ind))^gamma[2], f1)
     
   return(.5 * b + sum((f2 - f1) * (Y - .5 * (f1 + f2)) / sigma^2) /
            sum((f2 - f1) / sigma^2))
@@ -80,8 +114,10 @@ minimax_Lhat <- function(b, gamma, C, X, Y, mon_ind, sigma) {
 
 ##' Estimator used in constructing the minimax CI for RDD
 ##'
-##' Calculates the estimator that is used to construct the minimax
-##' CI for RDD
+##' Calculates the estimator that is used to construct the adaptive (or minimax)
+##' CI for RDD. Again, the estimator correponds to the inverse modulus
+##' \eqn{\omega^{-1}(b, \Lambda_{\mathcal{V}+}(\gamma_2,
+##' C_2),\Lambda_{\mathcal{V}+}(\gamma_1, C_1)). }
 ##' 
 ##' @param b point where the inverse modulus is evaluated at
 ##' @param gamma length two vector of gammas (\eqn{(\gamma_1, \gamma_2)'})
@@ -94,78 +130,83 @@ minimax_Lhat <- function(b, gamma, C, X, Y, mon_ind, sigma) {
 ##' @param sigma_t standard deviation of the error term for the treated units
 ##' (either length 1 or \eqn{n_t})
 ##' @param sigma_c standard deviation of the error term for the control units
+##' @param swap indiactor of whether to swap the parameter spaces
 ##' @export
-
-minimax_Lhat_RD <- function(b, gamma, C, Xt, Xc, Yt, Yc, mon_ind,
-                            sigma_t, sigma_c) {
+Lhat_RD_fun <- function(b, gamma, C, Xt, Xc, Yt, Yc, mon_ind, sigma_t, sigma_c,
+                        swap = TRUE) {
   
-  om_inv <- invmod_RD(b, rep(gamma, 2), rep(C, 2), Xt, Xc, mon_ind = mon_ind,
-                      sigma_t = sigma_t, sigma_c = sigma_c, ret_list = TRUE)
+  om_inv <- invmod_RD(b, gamma, C, Xt, Xc, mon_ind = mon_ind,
+                      sigma_t = sigma_t, sigma_c = sigma_c)
   
   bc <- om_inv$bc
   bt <- om_inv$bt
-  
-  ft1 <- C * Norm(Vplus(Xt, mon_ind))^gamma
-  ft2 <- pmax(bt - C * Norm(Vminus(Xt,mon_ind))^gamma, ft1)
-  
-  fc1 <- C * Norm(Vplus(Xc, mon_ind))^gamma
-  fc2 <- pmax(bc - C * Norm(Vminus(Xc, mon_ind))^gamma, fc1)
-
-  Lhat_t <- .5 * bt + sum((ft2 - ft1) * (Yt - .5 * (ft1 + ft2)) / sigma_t^2) /
-    sum((ft2 - ft1) / sigma_t^2)
-
-  Lhat_c <- .5 * bc + sum((fc2 - fc1) * (Yc - .5 * (fc1 + fc2)) / sigma_c^2) /
-    sum((fc2 - fc1) / sigma_c^2)
+ 
+  Lhat_t <- Lhat_fun(bt, gamma, C, Xt, Yt, mon_ind = mon_ind, sigma = sigma_t)
+  Lhat_c <- Lhat_fun(bc, gamma, C, Xc, Yc, mon_ind = mon_ind, sigma = sigma_c,
+                     swap = TRUE)
 
   return(Lhat_t - Lhat_c)
 }
 
-
-CI_one_sd <- function(bpairmat, delta, gamma, C, X, mon_ind, sigma, y, lower, al,
-                      Dir = FALSE, maxQ = FALSE, simlen = 5e04, qres = FALSE,
+##' One-sided adaptive CI
+##'
+##' This function calculates the one cided adaptive CI for the regression
+##' function at a point problem as given in Kwon and Kwon (2019)
+##' 
+##' @param bpairmat 
+##' @param delta 
+##' @param gamma 
+##' @param C 
+##' @param X 
+##' @param mon_ind 
+##' @param sigma 
+##' @param Y 
+##' @param lower 
+##' @param al 
+##' @param dp indicator of whether to direct power
+##' @param maxQ 
+##' @param simlen 
+##' @param qres 
+##' @param alpha 
+##' @export
+CI_one_sd <- function(bpairmat, delta, gamma, C, X, mon_ind, sigma, Y, lower, al,
+                      dp = FALSE, maxQ = FALSE, simlen = 5e04, qres = FALSE,
                       alpha = .05){
   
   # bpairmat[j,] = (omega(del,F_J,F_j, omega(del,F_j,F_J)) 
   # where delta is given by sigma*(z_beta + z_{1-al/(2J)})
   
   J <- length(gamma)
-  n <- length(y)
+  n <- length(Y)
   
-  if (Dir) {
+  if (dp) {
     endj <- 1
-    chatvec <- numeric(1)
   } else {
     endj <- J
-    chatvec <- numeric(J)
   }
+
+  chatvec <- numeric(endj)
   
   if (maxQ) {
     sumpartmat <- matrix(0, n, J)
-    omprvec <- numeric(J)
+    omega_der_vec <- numeric(J)
   } 
   
   for (j in 1:endj) {
+
+    Cpair_j <- c(C[J], C[j])
+    gampair_j <- c(gamma[J], gamma[j])
     
     if (lower == TRUE) {
       b <- bpairmat[j, 1]
-      C1 <- C[J]
-      C2 <- C[j]
-      g1 <- gamma[J]
-      g2 <- gamma[j]
+      Lhat <- Lhat_fun(b, gampair_j, Cpair_j, X, mon_ind, sigma, Y)
+      K_Jj <- K_fun(b, gampair_j, Cpair_j, X, mon_ind)
+      omega_der_denom <- delta / sum(b * K_fun(b, gampair_j, Cpair_j, X, mon_ind))
     } else {
       b <- bpairmat[j, 2]
-      C1 <- C[j]
-      C2 <- C[J]
-      g1 <- gamma[j]
-      g2 <- gamma[J]
+      Lhat <- Lhat_fun(b, gampair_j, Cpair_j, X, mon_ind, sigma, Y, swap = TRUE)
     } 
     
-    f1_minus_f2 <- pos(b - C1 * Norm(Vplus(X, mon_ind))^g1 - 
-                         C2 * Norm(Vminus(X, mon_ind))^g2) / sigma
-    y_minus_midpoint <- (y - (C1 * Norm(Vplus(X,mon_ind))^g1 + b - 
-                                C2 * Norm(Vminus(X,mon_ind))^g2) / 2) / sigma
-    
-    Lhat_frac_num <- sum(f1_minus_f2 * y_minus_midpoint)
     
     # Calculation of omega'(del)
     # Uses Lemma B.3 in A&K(2016)
@@ -215,7 +256,7 @@ CI_one_sd <- function(bpairmat, delta, gamma, C, X, mon_ind, sigma, y, lower, al
     res <- ifelse(lower == T, max(chatvec) - q, min(chatvec) - q)
 
   } else {
-    res <- ifelse(lower == T,max(chatvec),min(chatvec))
+    res <- ifelse(lower == T, max(chatvec), min(chatvec))
   }
   
   if (qres == T) {
@@ -225,11 +266,12 @@ CI_one_sd <- function(bpairmat, delta, gamma, C, X, mon_ind, sigma, y, lower, al
   return(res)
 }
 
-##' Estimator used in constructing adaptive CIs for RDD
+##' Estimator used in constructing adaptive CIs for RDD 
 ##'
-##' Calculates the estimator that is used to construct the adaptive
-##' CI for RDD. The estimator corresponds to the inverse modulus
-##' \eqn{\omega^{-1}(b, \Lambda_{\mathcal{V}+}(\gamma_2, C_2),\Lambda_{\mathcal{V}+}(\gamma_1, C_1)) }
+##' Calculates the estimator that is used to construct the adaptive CI for RDD
+##' (or the regression function at a point problem). The estimator corresponds
+##' to the inverse modulus \eqn{\omega^{-1}(b, \Lambda_{\mathcal{V}+}(\gamma_2,
+##' C_2),\Lambda_{\mathcal{V}+}(\gamma_1, C_1)) }
 ##' 
 ##' @param b point where the inverse modulus is evaluated at
 ##' @param C1 \eqn{C_1}
@@ -237,15 +279,16 @@ CI_one_sd <- function(bpairmat, delta, gamma, C, X, mon_ind, sigma, y, lower, al
 ##' @param g1 \eqn{\gamma_1}
 ##' @param g2 \eqn{\gamma_2}
 ##' @param X design matrix
+##' @param Y
 ##' @param mon_ind
 ##' @param sigma
-##' @param y
 
-Lhatfun <- function(b, C1, C2, g1, g2, X, mon_ind, sigma, y){
+
+Lhatfun <- function(b, C1, C2, g1, g2, X, Y, mon_ind, sigma){
 
   f1_minus_f2 <- pos(b - C1 * Norm(Vplus(X, mon_ind))^g1 - 
                        C2 * Norm(Vminus(X, mon_ind))^g2) / sigma
-  y_minus_midpoint <- (y - (C1 * Norm(Vplus(X,mon_ind))^g1 + b - 
+  Y_minus_midpoint <- (Y - (C1 * Norm(Vplus(X,mon_ind))^g1 + b - 
                               C2 * Norm(Vminus(X,mon_ind))^g2) / 2) / sigma
   
   Lhat_frac_num <- sum(f1_minus_f2 * y_minus_midpoint)
