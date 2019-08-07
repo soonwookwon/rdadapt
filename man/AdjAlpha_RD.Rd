@@ -23,10 +23,16 @@ AdjAlpha_RD(gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c, lower,
 
 \item{sigma_c}{standard deviation of the error term for the control units}
 
+\item{lower}{}
+
+\item{simlen}{}
+
+\item{alpha}{}
+
 \item{Yt}{length \eqn{n_t} of outcome variables for the treated units}
 
 \item{Yc}{length \eqn{n_c} of outcome variables for the control units}
 }
 \description{
-Calculates the optimal "tay"
+Calculates the optimal "tau"
 }

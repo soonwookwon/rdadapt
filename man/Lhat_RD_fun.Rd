@@ -4,8 +4,8 @@
 \alias{Lhat_RD_fun}
 \title{Estimator used in constructing the minimax CI for RDD}
 \usage{
-Lhat_RD_fun(b, gamma, C, Xt, Xc, Yt, Yc, mon_ind, sigma_t, sigma_c,
-  swap = TRUE)
+Lhat_RD_fun(b = NULL, bt = NULL, bc = NULL, gamma, C, Xt, Xc, Yt, Yc,
+  mon_ind, sigma_t, sigma_c, swap = FALSE)
 }
 \arguments{
 \item{b}{point where the inverse modulus is evaluated at}
@@ -34,6 +34,6 @@ Lhat_RD_fun(b, gamma, C, Xt, Xc, Yt, Yc, mon_ind, sigma_t, sigma_c,
 \description{
 Calculates the estimator that is used to construct the adaptive (or minimax)
 CI for RDD. Again, the estimator correponds to the inverse modulus
-\eqn{\omega^{-1}(b, \Lambda_{\mathcal{V}+}(\gamma_2,
-C_2),\Lambda_{\mathcal{V}+}(\gamma_1, C_1)). }
+\eqn{\omega^{-1}(b, \Lambda_{\mathcal{V}+}(\gamma_1,
+C_1),\Lambda_{\mathcal{V}+}(\gamma_2, C_2)). }
 }

@@ -7,26 +7,11 @@
 mod_del_cal_orc(gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
   alpha = 0.05)
 }
-\arguments{
-\item{gamma}{}
-
-\item{C}{}
-
-\item{Xt}{}
-
-\item{Xc}{}
-
-\item{mon_ind}{}
-
-\item{sigma_t}{}
-
-\item{sigma_c}{}
-
-\item{alpha}{}
-
-\item{maxgam}{}
-
-\item{maxC}{}
+\value{
+a list with two elements, with each being a vector of length four
+  corresponding to 1) (\om_t(del,C_J,C_j), \om_c(del,C_J,C_j),
+  \om_t(del,C_j,C_J), \om_c(del,C_j,C_J)) and 2) (del_jt^L, del_jc^L,
+  del_jt^U, del_jc^U), respectively. \eqn{\delta} is fixed at \eqn{z_{1-\alpha}}
 }
 \description{
 mod_del_cal_orc

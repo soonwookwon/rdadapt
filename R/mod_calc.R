@@ -209,13 +209,13 @@ mod_del_cal <- function(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
   
   for (j in 1:J) {
     
-    gampair_j <- c(gamvec[J], gamvec[j])
-    Cpair_j <- c(Cvec[J], Cvec[j])
+    gampair_j <- c(gamvec[j], gamvec[J])
+    Cpair_j <- c(Cvec[j], Cvec[J])
     
     res_l <- modsol_RD(del_L, gampair_j, Cpair_j, Xt, Xc, mon_ind,
-                       sigma_t, sigma_c)
+                       sigma_t, sigma_c, swap = TRUE)
     res_u <- modsol_RD(del_U, gampair_j, Cpair_j, Xt, Xc, mon_ind, sigma_t,
-                       sigma_c, swap = TRUE)
+                       sigma_c)
     
     b_mat[j, 1:2] <- c(res_l$bt, res_l$bc)
     delta_mat[j, 1:2] <- c(res_l$delta_t, res_l$delta_c)
@@ -237,17 +237,19 @@ mod_del_cal <- function(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
 
 ##' mod_del_cal_orc
 ##'
-##' @param gamma 
-##' @param C 
-##' @param maxgam 
-##' @param maxC 
-##' @param Xt 
-##' @param Xc 
-##' @param mon_ind 
-##' @param sigma_t 
-##' @param sigma_c 
-##' @param alpha 
-##' @return
+##' @param gamma
+##' @param C
+##' @param Xt
+##' @param Xc
+##' @param mon_ind
+##' @param sigma_t
+##' @param sigma_c
+##' @param alpha
+##' @return a list with two elements, with each being a vector of length four
+##'   corresponding to 1) (\om_t(del,C_J,C_j), \om_c(del,C_J,C_j),
+##'   \om_t(del,C_j,C_J), \om_c(del,C_j,C_J)) and 2) (del_jt^L, del_jc^L,
+##'   del_jt^U, del_jc^U), respectively. \eqn{\delta} is fixed at \eqn{z_{1-\alpha}}
+##' 
 ##' @export
 
 mod_del_cal_orc <- function(gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
@@ -256,28 +258,30 @@ mod_del_cal_orc <- function(gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
   del_L <- stats::qnorm(1 - alpha)
   del_U <- stats::qnorm(1 - alpha)
   
-  b_mat <- matrix(0, 1, 4) # b_tJj, b_cJj, b_tjJ, b_cjJ 
-  delta_mat <- matrix(0, 1, 4) # Corresponding del_jt^L, del_jc^L, del_jt^U, del_jc^U
+  res_l <- modsol_RD(del_L, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
+                     swap = TRUE)
+  res_u <- modsol_RD(del_U, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c)
   
-  res_l <- modsol_RD(del_L, gampair_j, Cpair_j, Xt, Xc, mon_ind,
-                     sigma_t, sigma_c, swap = TRUE)
-  res_u <- modsol_RD(del_U, gampair_j, Cpair_j, Xt, Xc, mon_ind,
-                     sigma_t, sigma_c)
-  
-  b_mat[1, 1:2] <- c(res_l$bt, res_l$bc)
-  delta_mat[1, 1:2] <- c(res_l$delta_t, res_l$delta_c)
-  b_mat[1, 3:4] <- c(res_u$bt, res_u$bc)
-  delta_mat[1, 3:4] <- c(res_u$delta_t, res_u$delta_c)
-  
-  res <- list(b_mat = b_mat, delta_mat = delta_mat)
+  b_vec <- c(res_l$bt, res_l$bc, res_u$bt, res_u$bc)
+  delta_vec <- c(res_l$delta_t, res_l$delta_c, res_u$delta_t, res_u$delta_c)
+
+  res <- list(b_vec = b_vec, delta_vec = delta_vec)
   
   return(res)  
 }
 
-
-# Calculates between modulus of continuity: \omega_+(\delta)
-
-
+##' Between modulus
+##'
+##' Calculates the between modulus for the regression function at a point
+##' problem
+##' 
+##' @param delta 
+##' @param gamma 
+##' @param C 
+##' @param X 
+##' @param mon_ind 
+##' @param sigma
+##' @export
 bmodsol <- function(delta, gamma, C, X, mon_ind, sigma = 1) {
   
   omega_12 <- modsol(delta, gamma, C, X, mon_ind, sigma)

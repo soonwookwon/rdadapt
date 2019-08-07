@@ -27,6 +27,6 @@ Lhat_fun(b, gamma, C, X, mon_ind, sigma, Y, swap = FALSE)
 Calculates the estimator used in constructing then minimax (or adaptive) CIs
 for the regression function at a point problem. Again, the
 estimator corresponds to \eqn{\omega^{-1}(b,
-\Lambda_{\mathcal{V}+}(\gamma_2, C_2),\Lambda_{\mathcal{V}+}(\gamma_1, C_1))
+\Lambda_{\mathcal{V}+}(\gamma_1, C_1),\Lambda_{\mathcal{V}+}(\gamma_2, C_2))
 }
 }

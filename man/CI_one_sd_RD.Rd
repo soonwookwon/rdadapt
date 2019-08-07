@@ -5,27 +5,34 @@
 \title{(One-sided) Adaptive CI for RDD}
 \usage{
 CI_one_sd_RD(bpairmat, dmat, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
-  yt, yc, lower, al, Dir = FALSE)
+  Yt, Yc, lower, alpha = 0.05)
 }
 \arguments{
-\item{gamma}{length two vector of gammas (\eqn{(\gamma_1, \gamma_2)'})}
+\item{bpairmat}{}
 
-\item{C}{length two vector of Cs (\eqn{(C_1, C_2)'})}
+\item{dmat}{}
 
-\item{Xt}{\eqn{n_t \times k} design matrix for the treated units}
+\item{gamma}{}
 
-\item{Xc}{\eqn{n_c \times k} design matrix for the control units}
+\item{C}{}
 
-\item{mon_ind}{indice of the monotone variables}
+\item{Xt}{}
 
-\item{sigma_t}{standard deviation of the error term for the treated units
-(either length 1 or \eqn{n_t})}
+\item{Xc}{}
 
-\item{sigma_c}{standard deviation of the error term for the control units}
+\item{mon_ind}{}
 
-\item{Yt}{length \eqn{n_t} of outcome variables for the treated units}
+\item{sigma_t}{}
 
-\item{Yc}{length \eqn{n_c} of outcome variables for the control units}
+\item{sigma_c}{}
+
+\item{Yt}{}
+
+\item{Yc}{}
+
+\item{lower}{}
+
+\item{alpha}{}
 }
 \description{
 Calculates the (one-sided) adaptive CI for RDD
