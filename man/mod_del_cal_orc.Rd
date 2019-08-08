@@ -9,9 +9,9 @@ mod_del_cal_orc(gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
 }
 \value{
 a list with two elements, with each being a vector of length four
-  corresponding to 1) (\om_t(del,C_J,C_j), \om_c(del,C_J,C_j),
-  \om_t(del,C_j,C_J), \om_c(del,C_j,C_J)) and 2) (del_jt^L, del_jc^L,
-  del_jt^U, del_jc^U), respectively. \eqn{\delta} is fixed at \eqn{z_{1-\alpha}}
+  corresponding to 1) \eqn{(\om_t(del,C_J,C_j), \om_c(del,C_J,C_j),
+  \om_t(del,C_j,C_J), \om_c(del,C_j,C_J))} and 2) \eqn{(del_jt^L, del_jc^L,
+  del_jt^U, del_jc^U)}, respectively. \eqn{\delta} is fixed at \eqn{z_{1-\alpha}}
 }
 \description{
 mod_del_cal_orc

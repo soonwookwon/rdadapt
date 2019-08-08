@@ -17,7 +17,7 @@ K_fun(b, gamma, C, X, mon_ind, swap = FALSE)
 
 \item{mon_ind}{indice of the monotone variables}
 
-\item{swap}{indicator of whether to swap the \code{\gamma} and \code{C}.}
+\item{swap}{indicator of whether to swap the \eqn{\gamma} and \eqn{C}.}
 }
 \description{
 This function calculates the kernel function that correponds to

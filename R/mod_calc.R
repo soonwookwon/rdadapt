@@ -8,7 +8,7 @@
 ##' @param C length two vector of Cs (\eqn{(C_1, C_2)'})
 ##' @param X n\eqn{\times}k design matrix, the kernel is evaluated at each X[i, ]
 ##' @param mon_ind indice of the monotone variables
-##' @param swap indicator of whether to swap the \code{\gamma} and \code{C}.
+##' @param swap indicator of whether to swap the \eqn{\gamma} and \eqn{C}.
 
 K_fun <- function(b, gamma, C, X, mon_ind, swap = FALSE){
 
@@ -246,9 +246,9 @@ mod_del_cal <- function(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
 ##' @param sigma_c
 ##' @param alpha
 ##' @return a list with two elements, with each being a vector of length four
-##'   corresponding to 1) (\om_t(del,C_J,C_j), \om_c(del,C_J,C_j),
-##'   \om_t(del,C_j,C_J), \om_c(del,C_j,C_J)) and 2) (del_jt^L, del_jc^L,
-##'   del_jt^U, del_jc^U), respectively. \eqn{\delta} is fixed at \eqn{z_{1-\alpha}}
+##'   corresponding to 1) \eqn{(\om_t(del,C_J,C_j), \om_c(del,C_J,C_j),
+##'   \om_t(del,C_j,C_J), \om_c(del,C_j,C_J))} and 2) \eqn{(del_jt^L, del_jc^L,
+##'   del_jt^U, del_jc^U)}, respectively. \eqn{\delta} is fixed at \eqn{z_{1-\alpha}}
 ##' 
 ##' @export
 
