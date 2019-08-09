@@ -176,12 +176,14 @@ modsol_RD <- function(delta, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
   maxint <- 100
   
   minbt <- minb_fun(gamma, C, Xt, mon_ind)
+  minbc <- minb_fun(gamma, C, Xc, mon_ind, swap = TRUE)
+  minb <- minbt + minbc
   
   fun <- function(b) {
     invmod_RD(b, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c)$delta - delta
   }
   
-  solve <- stats::uniroot(fun, c(minbt, maxint), extendInt = "upX",
+  solve <- stats::uniroot(fun, c(minb, maxint), extendInt = "upX",
                           tol = .Machine$double.eps^10)
   
   bsol <- solve$root
