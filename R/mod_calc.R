@@ -113,10 +113,14 @@ invmod_RD <- function(b, gamma, C, Xt, Xc, mon_ind, sigma_t = 1, sigma_c = 1,
   }
 
   minbt <- minb_fun(gamma, C, Xt, mon_ind)
-
-  bt_sol <- stats::uniroot(deriv_bt, c(minbt, b), tol = .Machine$double.eps^10)
-
-  bt <- bt_sol$root
+  
+  if(b == minbt){
+    bt <- minbt
+  }else{
+    bt_sol <- stats::uniroot(deriv_bt, c(minbt, b), tol = .Machine$double.eps^10)
+    
+    bt <- bt_sol$root
+  }
   
   delta_t <- invmod(bt, gamma, C, Xt, mon_ind, sigma_t)
   delta_c <- invmod(b - bt, gamma, C, Xc, mon_ind, sigma_c, swap = TRUE)
@@ -136,11 +140,13 @@ modsol <- function(delta, gamma, C, X, mon_ind, sigma = 1, swap = FALSE){
   
   maxint <- 100 # fix this
   
+  minb <- minb_fun(gamma, C, X, mon_ind)
+  
   fun <- function(b) {
     invmod(b, gamma, C, X, mon_ind, sigma) - delta
   }
   
-  solve <- stats::uniroot(fun, c(0, maxint), extendInt = "upX",
+  solve <- stats::uniroot(fun, c(minb, maxint), extendInt = "upX",
                           tol = .Machine$double.eps^10)
   
   return(solve$root)
@@ -169,11 +175,13 @@ modsol_RD <- function(delta, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
   
   maxint <- 100
   
+  minbt <- minb_fun(gamma, C, Xt, mon_ind)
+  
   fun <- function(b) {
     invmod_RD(b, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c)$delta - delta
   }
   
-  solve <- stats::uniroot(fun, c(0, maxint), extendInt = "upX",
+  solve <- stats::uniroot(fun, c(minbt, maxint), extendInt = "upX",
                           tol = .Machine$double.eps^10)
   
   bsol <- solve$root
