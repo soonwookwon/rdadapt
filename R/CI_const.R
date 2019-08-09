@@ -371,7 +371,7 @@ AdjAlpha2 <- function(gamma, C, X, sigma, mon_ind, simlen = 1e04,
       C2 <- C[j]
       g1 <- gamma[J]
       g2 <- gamma[j]
-6
+
       f1_minus_f2 <- pos(b - C1 * Norm(Vplus(X, mon_ind))^g1 - 
                            C2 * Norm(Vminus(X, mon_ind))^g2) / sigma      
       omega_der_denom <- sum(f1_minus_f2 / sigma)
@@ -444,7 +444,7 @@ AdjAlpha2 <- function(gamma, C, X, sigma, mon_ind, simlen = 1e04,
 ##' @param Yc length \eqn{n_c} of outcome variables for the control units
 ##' @export
 AdjAlpha_RD <- function(gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c, lower,
-                        simlen = 1e04, alpha = .05){
+                        simlen = 1e05, alpha = .05){
   
   J <- length(gamma)
   nt <- nrow(Xt)
@@ -488,7 +488,7 @@ AdjAlpha_RD <- function(gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c, lower,
     return(q) 
   }
   
-  r <- stats::uniroot(prob_maxV, c(alpha / J, alpha))
+  r <- stats::uniroot(prob_maxV, c(alpha / J, alpha), extendInt = "yes")
   res <- r$root
   
   return(res)
