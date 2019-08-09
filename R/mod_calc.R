@@ -117,7 +117,7 @@ modsol <- function(delta, gamma, C, X, mon_ind, sigma = 1, swap = FALSE){
   maxint <- 100 # fix this
   
   fun <- function(b) {
-    invmod(b, gamma, C, X, mon_ind, sigma)$delta - delta
+    invmod(b, gamma, C, X, mon_ind, sigma) - delta
   }
   
   solve <- stats::uniroot(fun, c(0, maxint), extendInt = "upX",
