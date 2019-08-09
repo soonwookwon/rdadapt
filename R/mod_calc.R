@@ -23,6 +23,30 @@ K_fun <- function(b, gamma, C, X, mon_ind, swap = FALSE){
   return(K)
 }
 
+##' Calculate omega(0)
+##'
+##' Calculates the smallest possible b value, or omega(0)
+##' 
+##' @param gamma 
+##' @param C 
+##' @param X 
+##' @param mon_ind 
+##' @param swap 
+minb_fun <- function(gamma, C, X, mon_ind, swap = FALSE){
+
+  if (swap) {
+    gamma <- gamma[2:1]
+    C <- C[2:1]
+  }
+
+  minb <- min(C[2] * Norm(Vplus(X, mon_ind))^gamma[2] +
+                C[1] * Norm(Vminus(X, mon_ind))^gamma[1])
+  
+  return(minb)
+}
+
+
+
 ##' Invsere modulus
 ##'
 ##' Calculates the inverse modulus for the regression function at a point
@@ -87,25 +111,21 @@ invmod_RD <- function(b, gamma, C, Xt, Xc, mon_ind, sigma_t = 1, sigma_c = 1,
 
     return(om_inv_t_der - om_inv_c_der)
   }
+
+  minbt <- minb_fun(gamma, C, Xt, mon_ind)
+
+  bt_sol <- stats::uniroot(deriv_bt, c(minbt, b), tol = .Machine$double.eps^10)
+
+  bt <- bt_sol$root
   
-  if (b == 0) {
-    
-    return(0)
-    
-  } else {
-
-    bt_sol <- stats::uniroot(deriv_bt, c(0, b), tol = .Machine$double.eps^10)
-
-    bt <- bt_sol$root
-    
-    delta_t <- invmod(bt, gamma, C, Xt, mon_ind, sigma_t)
-    delta_c <- invmod(b - bt, gamma, C, Xc, mon_ind, sigma_c, swap = TRUE)
-    
-    res <- list(delta = sqrt(delta_t^2 + delta_c^2), bt = bt, delta_t = delta_t,
-                bc = b - bt, delta_c = delta_c)
-    
-    return(res)
-  }
+  delta_t <- invmod(bt, gamma, C, Xt, mon_ind, sigma_t)
+  delta_c <- invmod(b - bt, gamma, C, Xc, mon_ind, sigma_c, swap = TRUE)
+  
+  res <- list(delta = sqrt(delta_t^2 + delta_c^2), bt = bt, delta_t = delta_t,
+              bc = b - bt, delta_c = delta_c)
+  
+  return(res)
+  
 }
 
 
