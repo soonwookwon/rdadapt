@@ -188,6 +188,8 @@ CI_one_sd_RD <- function(bpairmat, dmat, gamma, C, Xt, Xc, mon_ind,
   dmat_l <- dmat[, 1:2, drop=F]
   dmat_u <- dmat[, 3:4, drop=F]
   
+  chatvec <- numeric(J)
+  
   
   for (j in 1:J) {
 
@@ -217,13 +219,13 @@ CI_one_sd_RD <- function(bpairmat, dmat, gamma, C, Xt, Xc, mon_ind,
     K_jt <- K_fun(bt, gampair_j, Cpair_j, Xt, mon_ind = mon_ind, swap = TRUE)
     K_jc <- K_fun(bc, gampair_j, Cpair_j, Xc, mon_ind = mon_ind)
     
-    omega_der_t <- delta_t / (bt * K_jt / sigma_t^2) 
-    omega_der_c <- delta_c / (bc * K_jc / sigma_c^2)
+    omega_der_t <- delta_t / sum(bt * K_jt / sigma_t^2) 
+    omega_der_c <- delta_c / sum(bc * K_jc / sigma_c^2)
     omega_der <- sqrt(omega_der_t^2 + omega_der_c^2)
     
     Lhat <- Lhat_RD_fun(bt = bt, bc = bc, gamma = gampair_j, C = Cpair_j,
-                        Xt = Xt, Xc = Xc, Yt = Yt, Yc = Yc, mon_ind,
-                        sigma_t, sigma_c, swap = swap)
+                        Xt = Xt, Xc = Xc, Yt = Yt, Yc = Yc, mon_ind = mon_ind,
+                        sigma_t = sigma_t, sigma_c = sigma_c, swap = swap)
     
     chat <- ifelse(lower == TRUE, 
                    Lhat - 0.5 * ((bt + bc) + stats::qnorm(1 - alpha) * omega_der), 
