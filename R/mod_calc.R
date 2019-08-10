@@ -17,8 +17,8 @@ K_fun <- function(b, gamma, C, X, mon_ind, swap = FALSE){
     C <- C[2:1]
   }
 
-  K <- pos(1 - (C[2] / b) * Norm(Vplus(X, mon_ind))^gamma[2] -
-             (C[1] / b) * Norm(Vminus(X, mon_ind))^gamma[1])^2
+  K <- pos(1 - (C[1] / b) * Norm(Vplus(X, mon_ind))^gamma[2] -
+             (C[2] / b) * Norm(Vminus(X, mon_ind))^gamma[1])^2
   
   return(K)
 }
