@@ -245,6 +245,7 @@ mod_del_cal <- function(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
   if (J == 1){   # Minimax case
     
     del_L <- stats::qnorm(1 - alpha)
+    del_U <- stats::qnorm(1 - alpha)
     alnewL <- alpha
     alnewU <- alpha
     
