@@ -234,7 +234,7 @@ modsol_RD <- function(delta, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
 mod_del_cal <- function(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
                         alpha = .05) {
 
-  # For RD design, given J, this function returns
+  # For RD design, given C_max = \bar{C}, this function returns
   # 1) \om_t(del_adj,C_J,C_j), \om_c(del_adj,C_J,C_j), \om_t(del_adj,C_j,C_J), \om_c(del_adj,C_j,C_J) 
   # for j=1,...,J, yielding J*4 dim matrix
   # 2) del_jt^L, del_jc^L, del_jt^U, del_jc^U for j=1,...,J, yielding J*4 dim matrix
