@@ -499,3 +499,201 @@ AdjAlpha_RD <- function(gamma, C, gam_min = min(gamma), C_max = max(C), Xt, Xc,
   
   return(res)
 }
+
+
+##' (One-sided) Procedure choice
+##'
+##' Calculates the adaptive procedure "closest" to the oracle one
+##' 
+##' @param Cgrid
+##' @param gamma length two vector of gammas (\eqn{(\gamma_1, \gamma_2)'})
+##' @param C length two vector of Cs (\eqn{(C_1, C_2)'})
+##' @param Xt \eqn{n_t \times k} design matrix for the treated units
+##' @param Xc \eqn{n_c \times k} design matrix for the control units
+##' @param mon_ind indice of the monotone variables
+##' @param sigma_t standard deviation of the error term for the treated units
+##' (either length 1 or \eqn{n_t})
+##' @param sigma_c standard deviation of the error term for the control units
+##' @param lower 
+##' @param alpha 
+##' @param procmat
+##' @param Procnames
+##' @param Nsim_proc
+##' @param rhofun corresponds to \eqn{\rho} in our documentation
+##' @export
+
+which_proc <- function(Cgrid, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
+                       lower, alpha, procmat, ProcNames, Nsim_proc, 
+                       rhofun = c("diff","ratio")){
+  
+  if(rhofun == "diff"){
+    
+    rhofun = function(l1, l2){  
+      
+      res <- l1 - l2
+      
+      return(res)
+    }
+  }else{
+    
+    rhofun = function(l1, l2){  
+      
+      res <- l1 / l2
+      
+      return(res)
+    }
+  }
+  
+  gamgrid <- rep(1, length(Cgrid))
+  num_grid <- length(Cgrid)
+  N_proc <- length(ProcNames)
+  
+  gam_min <- min(gamgrid)
+  C_max <- max(Cgrid)
+
+  nt <- nrow(Xt)   # Number of treated sample
+  nc <- nrow(Xc)  # Number of control sample
+  k <- ncol(Xt)
+  
+  f_wc <- function (gamma, C) {
+    
+    f <- function(x) {
+      
+      x <- matrix(x, 1, k)
+      
+      fc <- C * Norm(Vplus(x, mon_ind))^gamma - C * Norm(Vminus(x, mon_ind))^gamma   
+      res <- fc
+      
+      return(res)
+    }
+    
+    return(f)
+  }
+  
+  
+  # fX_wc is a (n * num_grid)-dim matrix where f(X)[,j] = (f_j(x_1), ..., f_j(x_n))
+  # with f_j denoting the worst-case function under (gamma_j, C_j)
+  
+  fX_wc <- matrix(NA, nrow = n, ncol = num_grid)
+  
+  for(j in 1:num_grid) {
+    fX_wc[, j] <- apply(X, 1, function(x) f_wc(gamgrid[j], Cgrid[j])(matrix(x, nrow=1)))
+  }
+  
+  fXt_wc <- fX_wc[tind == 1, ]
+  fXc_wc <- fX_wc[tind == 0, ]
+  
+  # Calculating moduli of continuity and related quantities
+  
+  proc_bmat = matrix(0, sum(procmat), 4)
+  proc_dmat = matrix(0, sum(procmat), 4)
+  proc_alphavec = numeric(N_proc)
+  
+  beg_ind <- 1
+  
+  for(i in 1:N_proc){
+    
+    print(paste("proc",i))
+    
+    adpt_ind <- procmat[i, ]
+    adpt_len <- sum(procmat[i, ])
+    end_ind <- beg_ind + adpt_len -1
+    modres <- mod_del_cal(gamma[adpt_ind], C[adpt_ind], gam_min, C_max, 
+                          Xt, Xc, mon_ind, sigma_t, sigma_c)
+    proc_bmat[beg_ind:end_ind, ] <- modres$b_mat
+    proc_dmat[beg_ind:(beg_ind + adpt_len -1), ] <- modres$delta_mat
+    
+    if(lower == T){
+      proc_alphavec[i] <- modres$alnewL
+    }else{
+      proc_alphavec[i] <- modres$alnewU
+    }
+    
+    
+    beg_ind <- beg_ind + adpt_len
+    
+  }
+  
+  CIlen_orc <- numeric(num_grid)
+  
+  for(j in 1:num_grid){
+    # res_mod_orc <- mod_del_cal_orc(c(gamgrid[j], min(gamgrid)), c(Cgrid[j], max(Cgrid)),
+    #                                Xt, Xc, mon_ind, sigma_t, sigma_c)
+    # CIlen_orc[j] <- ifelse(lower, sum(res_mod_orc$b_vec[1:2]), sum(res_mod_orc$b_vec[3:4]))
+    res_mod_orc <- mod_del_cal(gamgrid[j], Cgrid[j], gam_min, C_max,
+                                   Xt, Xc, mon_ind, sigma_t, sigma_c)
+    CIlen_orc[j] <- ifelse(lower, sum(res_mod_orc$b_mat[, 1:2]), 
+                           sum(res_mod_orc$b_mat[, 3:4]))
+  }
+  
+  # Generating y_i's and computating CIs
+  
+  CIs <- array(0, c(num_grid, Nsim_proc, N_proc))
+  # CIs_orc <- matrix(0, Nsim_proc, num_grid)
+  
+  
+  for (i in 1:Nsim_proc) {
+    
+    ut <- rnorm(nt, sd = sigma_t)   # generate u_i's for the treated
+    Yt <- fXt_wc + ut
+    uc <- rnorm(nc, sd = sigma_c)   # generate u_i's for the contol
+    Yc <- fXc_wc + uc
+    
+    for (j in 1:num_grid){
+      
+      beg_ind <- 1
+      
+      for (j2 in 1:N_proc){
+        
+        adpt_ind <- procmat[j2,]
+        adpt_len <- sum(procmat[j2,])
+        end_ind <- beg_ind + adpt_len -1
+        
+        CIs[j,i,j2] <- CI_one_sd_RD(proc_bmat[beg_ind:end_ind, , drop=F],
+                                    proc_dmat[beg_ind:end_ind, , drop=F],
+                                    gamma[adpt_ind], C[adpt_ind], gam_min, C_max,
+                                    Xt, Xc, mon_ind, sigma_t, sigma_c, Yt[,j], Yc[,j],
+                                    lower, al = proc_alphavec[j2])
+        
+        beg_ind <- beg_ind + adpt_len
+      }
+    }
+    
+    if(i%%50 == 0) print(i)
+  }
+  
+  CIlen <- apply(0 - CIs,MARGIN = c(1,3),FUN=mean,na.rm=T)
+  
+  if(lower == T){
+    
+    CIcov <- apply(CIs < 0,MARGIN = c(1,3),FUN=mean,na.rm=T)
+  }else{
+    
+    CIcov <- apply(CIs > 0,MARGIN = c(1,3),FUN=mean,na.rm=T)
+  }
+  
+  if(lower == F){
+    
+    CIlen <- -CIlen
+  }
+  
+  regret_mat <- rhofun(CIlen, 
+                       matrix(rep(CIlen_orc, N_proc), num_grid, N_proc, byrow = F))
+  
+  maxregret <- apply(regret_mat, 2, max)
+  names(maxregret) <- ProcNames
+  
+  minMRind <- which.min(maxregret)
+  bestProc <- C[procmat[minMRind, ]]
+  bestProcName <- ProcNames[minMRind]
+  
+  print(paste("C", seq(1:length(bestProc)), ":", bestProc), sep="")
+  
+  res <- list(CIlen = CIlen, CIlen_orc = CIlen_orc, regret_mat = regret_mat,
+              maxregret = maxregret, bestProc = bestProc, bestProcName = bestProcName,
+              proc_bmat = proc_bmat, proc_dmat = proc_dmat,
+              proc_alphavec = proc_alphavec, CIcov = CIcov)
+  
+  return(res)
+}
+
