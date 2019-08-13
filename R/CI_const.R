@@ -180,8 +180,8 @@ Lhat_RD_fun <- function(b = NULL, bt = NULL, bc = NULL, gamma, C, Xt, Xc, Yt, Yc
 ##' @param lower 
 ##' @param alpha 
 ##' @export
-CI_one_sd_RD <- function(bpairmat, dmat, gamma, C, gam_min, C_max, Xt, Xc, mon_ind,
-                         sigma_t, sigma_c, Yt, Yc, lower, alpha = .05){
+CI_one_sd_RD <- function(bpairmat, dmat, gamma, C, gam_min = min(gamma), C_max = max(C), 
+                         Xt, Xc, mon_ind, sigma_t, sigma_c, Yt, Yc, lower, alpha = .05){
   
   J <- length(gamma)
   
@@ -449,8 +449,8 @@ AdjAlpha2 <- function(gamma, C, X, sigma, mon_ind, simlen = 1e04,
 ##' @param Yt length \eqn{n_t} of outcome variables for the treated units
 ##' @param Yc length \eqn{n_c} of outcome variables for the control units
 ##' @export
-AdjAlpha_RD <- function(gamma, C, gam_min, C_max, Xt, Xc, mon_ind, sigma_t, sigma_c, lower,
-                        simlen = 1e05, alpha = .05){
+AdjAlpha_RD <- function(gamma, C, gam_min = min(gamma), C_max = max(C), Xt, Xc, 
+                        mon_ind, sigma_t, sigma_c, lower, simlen = 1e05, alpha = .05){
   
   J <- length(gamma)
   nt <- nrow(Xt)

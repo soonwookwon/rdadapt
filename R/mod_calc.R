@@ -233,7 +233,7 @@ modsol_RD <- function(delta, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
 ##' @param alpha 
 ##' @export
 
-mod_del_cal <- function(gamvec, Cvec, gam_min, C_max, 
+mod_del_cal <- function(gamvec, Cvec, gam_min = min(gamvec), C_max = max(Cvec), 
                         Xt, Xc, mon_ind, sigma_t, sigma_c, alpha = .05) {
 
   # For RD design, given C_max = \bar{C}, this function returns
