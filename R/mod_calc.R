@@ -57,6 +57,7 @@ f2subf1_fun <- function(b, gamma, C, X, mon_ind, swap = FALSE){
 ##' @param X 
 ##' @param mon_ind 
 ##' @param swap 
+
 minb_fun <- function(gamma, C, X, mon_ind, swap = FALSE){
 
   if (swap) {
