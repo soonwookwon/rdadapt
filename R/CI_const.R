@@ -168,6 +168,8 @@ Lhat_RD_fun <- function(b = NULL, bt = NULL, bc = NULL, gamma, C, Xt, Xc, Yt, Yc
 ##' @param dmat 
 ##' @param gamma 
 ##' @param C 
+##' @param gam_min
+##' @param C_max
 ##' @param Xt 
 ##' @param Xc 
 ##' @param mon_ind 
@@ -178,7 +180,7 @@ Lhat_RD_fun <- function(b = NULL, bt = NULL, bc = NULL, gamma, C, Xt, Xc, Yt, Yc
 ##' @param lower 
 ##' @param alpha 
 ##' @export
-CI_one_sd_RD <- function(bpairmat, dmat, gamma, C, Xt, Xc, mon_ind,
+CI_one_sd_RD <- function(bpairmat, dmat, gamma, C, gam_min, C_max, Xt, Xc, mon_ind,
                          sigma_t, sigma_c, Yt, Yc, lower, alpha = .05){
   
   J <- length(gamma)
@@ -193,8 +195,8 @@ CI_one_sd_RD <- function(bpairmat, dmat, gamma, C, Xt, Xc, mon_ind,
   
   for (j in 1:J) {
 
-    gampair_j <- c(gamma[j], gamma[J])
-    Cpair_j <- c(C[j], C[J])
+    gampair_j <- c(gamma[j], gam_min)
+    Cpair_j <- c(C[j], C_max)
     
     if (lower) {
 
@@ -433,6 +435,8 @@ AdjAlpha2 <- function(gamma, C, X, sigma, mon_ind, simlen = 1e04,
 ##' 
 ##' @param gamma length two vector of gammas (\eqn{(\gamma_1, \gamma_2)'})
 ##' @param C length two vector of Cs (\eqn{(C_1, C_2)'})
+##' @param gam_min
+##' @param C_max
 ##' @param Xt \eqn{n_t \times k} design matrix for the treated units
 ##' @param Xc \eqn{n_c \times k} design matrix for the control units
 ##' @param mon_ind indice of the monotone variables
@@ -445,7 +449,7 @@ AdjAlpha2 <- function(gamma, C, X, sigma, mon_ind, simlen = 1e04,
 ##' @param Yt length \eqn{n_t} of outcome variables for the treated units
 ##' @param Yc length \eqn{n_c} of outcome variables for the control units
 ##' @export
-AdjAlpha_RD <- function(gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c, lower,
+AdjAlpha_RD <- function(gamma, C, gam_min, C_max, Xt, Xc, mon_ind, sigma_t, sigma_c, lower,
                         simlen = 1e05, alpha = .05){
   
   J <- length(gamma)
@@ -462,8 +466,8 @@ AdjAlpha_RD <- function(gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c, lower,
     
     for (j in 1:J) {
 
-      gampair_j <- c(gamma[j], gamma[J])
-      Cpair_j <- c(C[j], C[J])
+      gampair_j <- c(gamma[j], gam_min)
+      Cpair_j <- c(C[j], C_max)
       swap <- lower
      
       modres <- modsol_RD(delta, gampair_j, Cpair_j, Xt, Xc, mon_ind,

@@ -18,7 +18,7 @@ K_fun <- function(b, gamma, C, X, mon_ind, swap = FALSE){
   }
 
   K <- pos(1 - (C[1] / b) * Norm(Vplus(X, mon_ind))^gamma[2] -
-             (C[2] / b) * Norm(Vminus(X, mon_ind))^gamma[1])^2
+             (C[2] / b) * Norm(Vminus(X, mon_ind))^gamma[1])
   
   return(K)
 }
@@ -43,32 +43,7 @@ f2subf1_fun <- function(b, gamma, C, X, mon_ind, swap = FALSE){
   }
   
   K <- pos(b - (C[2]) * Norm(Vplus(X, mon_ind))^gamma[2] -
-             (C[1]) * Norm(Vminus(X, mon_ind))^gamma[1])^2
-  
-  return(K)
-}
-
-##' Calculate \eqn{f_2^* - f_1^*}
-##'
-##' This function calculates \eqn{f_2^* - f_1^*} that correponds to
-##' \eqn{\omega^{-1}(b, \Lambda_{\mathcal{V}+}(\gamma_1, C_1),\Lambda_{\mathcal{V}+}(\gamma_2, C_2)) }
-##' 
-##' @param b point where the inverse modulus is evaluated at
-##' @param gamma length two vector of gammas (\eqn{(\gamma_1, \gamma_2)'})
-##' @param C length two vector of Cs (\eqn{(C_1, C_2)'})
-##' @param X n\eqn{\times}k design matrix, the kernel is evaluated at each X[i, ]
-##' @param mon_ind indice of the monotone variables
-##' @param swap indicator of whether to swap the \eqn{\gamma} and \eqn{C}.
-
-f2subf1_fun <- function(b, gamma, C, X, mon_ind, swap = FALSE){
-  
-  if (swap) {
-    gamma <- gamma[2:1]
-    C <- C[2:1]
-  }
-  
-  K <- pos(b - (C[2]) * Norm(Vplus(X, mon_ind))^gamma[2] -
-             (C[1]) * Norm(Vminus(X, mon_ind))^gamma[1])^2
+             (C[1]) * Norm(Vminus(X, mon_ind))^gamma[1])
   
   return(K)
 }
@@ -248,6 +223,8 @@ modsol_RD <- function(delta, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
 ##' 
 ##' @param gamvec  
 ##' @param Cvec 
+##' @param gam_min
+##' @param C_max
 ##' @param Xt 
 ##' @param Xc 
 ##' @param mon_ind 
@@ -256,8 +233,8 @@ modsol_RD <- function(delta, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
 ##' @param alpha 
 ##' @export
 
-mod_del_cal <- function(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
-                        alpha = .05) {
+mod_del_cal <- function(gamvec, Cvec, gam_min, C_max, 
+                        Xt, Xc, mon_ind, sigma_t, sigma_c, alpha = .05) {
 
   # For RD design, given C_max = \bar{C}, this function returns
   # 1) \om_t(del_adj,C_J,C_j), \om_c(del_adj,C_J,C_j), \om_t(del_adj,C_j,C_J), \om_c(del_adj,C_j,C_J) 
@@ -276,9 +253,9 @@ mod_del_cal <- function(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
     
   } else {
     
-    alnewL <- AdjAlpha_RD(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
+    alnewL <- AdjAlpha_RD(gamvec, Cvec, gam_min, C_max, Xt, Xc, mon_ind, sigma_t, sigma_c,
                           lower = TRUE, alpha = alpha) 
-    alnewU <- AdjAlpha_RD(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
+    alnewU <- AdjAlpha_RD(gamvec, Cvec, gam_min, C_max, Xt, Xc, mon_ind, sigma_t, sigma_c,
                           lower = FALSE, alpha = alpha)
     
     del_L <- stats::qnorm(1 - alnewL) 
@@ -291,8 +268,8 @@ mod_del_cal <- function(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
   
   for (j in 1:J) {
     
-    gampair_j <- c(gamvec[j], gamvec[J])
-    Cpair_j <- c(Cvec[j], Cvec[J])
+    gampair_j <- c(gamvec[j], gam_min)
+    Cpair_j <- c(Cvec[j], C_max)
     
     res_l <- modsol_RD(del_L, gampair_j, Cpair_j, Xt, Xc, mon_ind,
                        sigma_t, sigma_c, swap = TRUE)
