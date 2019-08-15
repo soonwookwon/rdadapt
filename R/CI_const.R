@@ -557,45 +557,13 @@ which_proc <- function(Cgrid, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
   nc <- nrow(Xc)  # Number of control sample
   k <- ncol(Xt)
   
-  ft_wc <- function (gamma, C) {
-    
-    f <- function(x) {
-      
-      x <- matrix(x, 1, k)
-      
-      ft <- - C * Norm(Vminus(x, mon_ind))^gamma   
-      res <- ft
-      
-      return(res)
-    }
-    
-    return(f)
-  }
-  
-  fc_wc <- function (gamma, C) {
-    
-    f <- function(x) {
-      
-      x <- matrix(x, 1, k)
-      
-      fc <- C * Norm(Vplus(x, mon_ind))^gamma
-      res <- fc
-      
-      return(res)
-    }
-    
-    return(f)
-  }
-  
   fXt_wc <- matrix(NA, nrow = nt, ncol = num_grid)
   fXc_wc <- matrix(NA, nrow = nc, ncol = num_grid)
   
   for(j in 1:num_grid) {
-    fXt_wc[, j] <- apply(Xt, 1, function(x) ft_wc(gamgrid[j], Cgrid[j])(matrix(x, nrow=1)))
-  }
-  
-  for(j in 1:num_grid) {
-    fXc_wc[, j] <- apply(Xc, 1, function(x) fc_wc(gamgrid[j], Cgrid[j])(matrix(x, nrow=1)))
+
+    fXt_wc[, j] <- - Cgrid[j] * Norm(Vminus(Xt, mon_ind))^gamgrid[j] 
+    fXc_wc[, j] <- Cgrid[j] * Norm(Vplus(Xc, mon_ind))^gamgrid[j]
   }
   
   # Calculating moduli of continuity and related quantities
