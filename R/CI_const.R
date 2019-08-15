@@ -526,6 +526,8 @@ which_proc <- function(Cgrid, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
                        lower, alpha, procmat, ProcNames, Nsim_proc, 
                        rhofun = c("diff","ratio")){
   
+  rhofun <- match.arg(rhofun)
+  
   if(rhofun == "diff"){
     
     rhofun = function(l1, l2){  
@@ -555,13 +557,28 @@ which_proc <- function(Cgrid, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
   nc <- nrow(Xc)  # Number of control sample
   k <- ncol(Xt)
   
-  f_wc <- function (gamma, C) {
+  ft_wc <- function (gamma, C) {
     
     f <- function(x) {
       
       x <- matrix(x, 1, k)
       
-      fc <- C * Norm(Vplus(x, mon_ind))^gamma - C * Norm(Vminus(x, mon_ind))^gamma   
+      ft <- - C * Norm(Vminus(x, mon_ind))^gamma   
+      res <- ft
+      
+      return(res)
+    }
+    
+    return(f)
+  }
+  
+  fc_wc <- function (gamma, C) {
+    
+    f <- function(x) {
+      
+      x <- matrix(x, 1, k)
+      
+      fc <- C * Norm(Vplus(x, mon_ind))^gamma
       res <- fc
       
       return(res)
@@ -570,18 +587,16 @@ which_proc <- function(Cgrid, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
     return(f)
   }
   
-  
-  # fX_wc is a (n * num_grid)-dim matrix where f(X)[,j] = (f_j(x_1), ..., f_j(x_n))
-  # with f_j denoting the worst-case function under (gamma_j, C_j)
-  
-  fX_wc <- matrix(NA, nrow = n, ncol = num_grid)
+  fXt_wc <- matrix(NA, nrow = nt, ncol = num_grid)
+  fXc_wc <- matrix(NA, nrow = nc, ncol = num_grid)
   
   for(j in 1:num_grid) {
-    fX_wc[, j] <- apply(X, 1, function(x) f_wc(gamgrid[j], Cgrid[j])(matrix(x, nrow=1)))
+    fXt_wc[, j] <- apply(Xt, 1, function(x) ft_wc(gamgrid[j], Cgrid[j])(matrix(x, nrow=1)))
   }
   
-  fXt_wc <- fX_wc[tind == 1, ]
-  fXc_wc <- fX_wc[tind == 0, ]
+  for(j in 1:num_grid) {
+    fXc_wc[, j] <- apply(Xc, 1, function(x) fc_wc(gamgrid[j], Cgrid[j])(matrix(x, nrow=1)))
+  }
   
   # Calculating moduli of continuity and related quantities
   
@@ -636,6 +651,7 @@ which_proc <- function(Cgrid, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
     
     ut <- rnorm(nt, sd = sigma_t)   # generate u_i's for the treated
     Yt <- fXt_wc + ut
+
     uc <- rnorm(nc, sd = sigma_c)   # generate u_i's for the contol
     Yc <- fXc_wc + uc
     
