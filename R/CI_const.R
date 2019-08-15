@@ -179,6 +179,7 @@ Lhat_RD_fun <- function(b = NULL, bt = NULL, bc = NULL, gamma, C, Xt, Xc, Yt, Yc
 ##' @param Yc 
 ##' @param lower 
 ##' @param alpha 
+##'
 ##' @export
 CI_one_sd_RD <- function(bpairmat, dmat, gamma, C, gam_min = min(gamma), C_max = max(C), 
                          Xt, Xc, mon_ind, sigma_t, sigma_c, Yt, Yc, lower, alpha = .05){
@@ -446,8 +447,7 @@ AdjAlpha2 <- function(gamma, C, X, sigma, mon_ind, simlen = 1e04,
 ##' @param lower 
 ##' @param simlen 
 ##' @param alpha 
-##' @param Yt length \eqn{n_t} of outcome variables for the treated units
-##' @param Yc length \eqn{n_c} of outcome variables for the control units
+##'
 ##' @export
 AdjAlpha_RD <- function(gamma, C, gam_min = min(gamma), C_max = max(C), Xt, Xc, 
                         mon_ind, sigma_t, sigma_c, lower, simlen = 1e05, alpha = .05){
@@ -617,10 +617,10 @@ which_proc <- function(Cgrid, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
   
   for (i in 1:Nsim_proc) {
     
-    ut <- rnorm(nt, sd = sigma_t)   # generate u_i's for the treated
+    ut <- stats::rnorm(nt, sd = sigma_t)   # generate u_i's for the treated
     Yt <- fXt_wc + ut
 
-    uc <- rnorm(nc, sd = sigma_c)   # generate u_i's for the contol
+    uc <- stats::rnorm(nc, sd = sigma_c)   # generate u_i's for the contol
     Yc <- fXc_wc + uc
     
     for (j in 1:num_grid){
@@ -637,7 +637,7 @@ which_proc <- function(Cgrid, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
                                     proc_dmat[beg_ind:end_ind, , drop=F],
                                     gamma[adpt_ind], C[adpt_ind], gam_min, C_max,
                                     Xt, Xc, mon_ind, sigma_t, sigma_c, Yt[,j], Yc[,j],
-                                    lower, al = proc_alphavec[j2])
+                                    lower, alpha = proc_alphavec[j2])
         
         beg_ind <- beg_ind + adpt_len
       }
@@ -681,3 +681,85 @@ which_proc <- function(Cgrid, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
   return(res)
 }
 
+
+#' Title
+#'
+#' @param Yt 
+#' @param Yc 
+#' @param Xt 
+#' @param Xc 
+#' @param C 
+#' @param C_max 
+#' @param mon_ind 
+#' @param sigma_t 
+#' @param sigma_c 
+#' @param lower 
+#' @param two_sided 
+#' @param alpha 
+#' @param modres 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+CI_gen <- function(Yt, Yc, Xt, Xc, C, C_max = max(C), mon_ind, sigma_t, sigma_c,
+                   lower, two_sided = F, alpha = 0.05,
+                   modres = NULL){
+
+  gamma <- rep(1, length(C))
+
+  alpha_new <- ifelse(two_sided, alpha / 2, alpha)
+
+  if(is.null(modres)){
+
+    modres <- mod_del_cal(gamma, C, 1, C_max, Xt, Xc, mon_ind, sigma_t, sigma_c, 
+                          alpha_new)
+  }
+
+  bmat <- modres$b_mat
+  dmat <- modres$delta_mat
+
+  if(lower == T){
+
+    al_adj <- modres$alnewL
+  }else{
+
+    al_adj <- modres$alnewU
+  }
+
+  res1 <- CI_one_sd_RD(bmat, dmat, gamma, C, 1, C_max, Xt, Xc, mon_ind, sigma_t,
+                       sigma_c, Yt, Yc, lower, alpha = al_adj)
+  
+  if(two_sided == F){
+    
+    res_l <- ifelse(lower, res1, -Inf)
+    res_u <- ifelse(lower, Inf, res1)
+    
+  }else{
+
+    if(length(C) > 1){
+
+      modres_mm <- mod_del_cal(min(gamma), max(C), 1, C_max, Xt, Xc, mon_ind,
+                               sigma_t, sigma_c, alpha_new)
+      
+    }else{
+
+      modres_mm <- modres
+    }
+    
+    bmat_mm <- modres_mm$b_mat
+    deltamat_mm <- modres_mm$delta_mat
+    
+    res2 <- CI_one_sd_RD(bmat_mm, deltamat_mm, 1, C_max, 1, C_max, Xt, Xc, 
+                         mon_ind, sigma_t, sigma_c, Yt, Yc, lower = !lower, 
+                         alpha_new)
+    
+    res_l <- ifelse(lower, res1, res2)
+    res_u <- ifelse(lower, res2, res1)
+
+  }
+
+  res <- list(CI_l = res_l, CI_u = res_u, alpha = alpha, Cvec = C, C_max = C_max)
+  
+  return(res)
+}

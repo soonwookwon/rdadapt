@@ -232,6 +232,7 @@ modsol_RD <- function(delta, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
 ##' @param sigma_t 
 ##' @param sigma_c 
 ##' @param alpha 
+##'
 ##' @export
 
 mod_del_cal <- function(gamvec, Cvec, gam_min = min(gamvec), C_max = max(Cvec), 
