@@ -17,8 +17,8 @@ K_fun <- function(b, gamma, C, X, mon_ind, swap = FALSE){
     C <- C[2:1]
   }
 
-  K <- pos(1 - (C[1] / b) * Norm(Vplus(X, mon_ind))^gamma[2] -
-             (C[2] / b) * Norm(Vminus(X, mon_ind))^gamma[1])
+  K <- pos(1 - (C[1] / b) * Norm(Vplus(X, mon_ind))^gamma[1] -
+             (C[2] / b) * Norm(Vminus(X, mon_ind))^gamma[2])
   
   return(K)
 }
@@ -42,8 +42,8 @@ f2subf1_fun <- function(b, gamma, C, X, mon_ind, swap = FALSE){
     C <- C[2:1]
   }
   
-  K <- pos(b - (C[2]) * Norm(Vplus(X, mon_ind))^gamma[2] -
-             (C[1]) * Norm(Vminus(X, mon_ind))^gamma[1])
+  K <- pos(b - (C[1]) * Norm(Vplus(X, mon_ind))^gamma[1] -
+             (C[2]) * Norm(Vminus(X, mon_ind))^gamma[2])
   
   return(K)
 }
@@ -65,8 +65,8 @@ minb_fun <- function(gamma, C, X, mon_ind, swap = FALSE){
     C <- C[2:1]
   }
 
-  minb <- min(C[2] * Norm(Vplus(X, mon_ind))^gamma[2] +
-                C[1] * Norm(Vminus(X, mon_ind))^gamma[1])
+  minb <- min(C[1] * Norm(Vplus(X, mon_ind))^gamma[1] +
+                C[2] * Norm(Vminus(X, mon_ind))^gamma[2])
   
   return(minb)
 }
