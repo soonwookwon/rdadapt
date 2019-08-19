@@ -4,8 +4,9 @@
 \alias{CI_one_sd_RD}
 \title{(One-sided) Adaptive CI for RDD}
 \usage{
-CI_one_sd_RD(bpairmat, dmat, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
-  Yt, Yc, lower, alpha = 0.05)
+CI_one_sd_RD(bpairmat, dmat, gamma, C, gam_min = min(gamma),
+  C_max = max(C), Xt, Xc, mon_ind, sigma_t, sigma_c, Yt, Yc, lower,
+  alpha = 0.05)
 }
 \arguments{
 \item{bpairmat}{}
