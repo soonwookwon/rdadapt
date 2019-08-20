@@ -160,6 +160,39 @@ Lhat_RD_fun <- function(b = NULL, bt = NULL, bc = NULL, gamma, C, Xt, Xc, Yt, Yc
   return(Lhat_t - Lhat_c)
 }
 
+##' Minimax CI for the RD parameter
+##'
+##' This function calculates shortest minimax (fixed-length) CI for the RD
+##' parameter
+##' 
+##' @param Yt 
+##' @param Yc 
+##' @param Xt 
+##' @param Xc 
+##' @param gam_min 
+##' @param C_max 
+##' @param mon_ind 
+##' @param sigma_t 
+##' @param sigma_c 
+##' @param alpha 
+##' @param modres 
+CI_minimax_RD <- function(Yt, Yc, Xt, Xc, gam_min, C_max, mon_ind, sigma_t, sigma_c,
+                          alpha = .05, modres) {
+
+  CI_length_sol <- optimize(CI_length_RD, gamma = gam_min, C = C_max,
+                            Xt = Xt, Xc = Xc, mon_ind = mon_ind,
+                            sigma_t = sigma_t, sigma_c = sigma_c, alpha = alpha)
+
+  min_half_length <- CI_length_sol$obj / 2
+  opt_b <- CI_length_sol$val
+
+  opt_Lhat <- Lhat_RD_fun(b = opt_b, gamma = rep(gam_min, 2), C = rep(C_max, 2),
+                          Xt = Xt, Xc = Xc, Yt = Yt, Yc = Yc, mon_ind = mon_ind,
+                          sigma_t = sigma_t, sigma_c = sigma_c)
+
+  return(c(opt_Lhat - min_half_length, opt_Lhat + min_half_length))
+}
+
 ##' (One-sided) Adaptive CI for RDD
 ##'
 ##' Calculates the (one-sided) adaptive CI for RDD 

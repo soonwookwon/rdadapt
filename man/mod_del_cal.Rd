@@ -4,8 +4,8 @@
 \alias{mod_del_cal}
 \title{Modulus for adaptive RDD}
 \usage{
-mod_del_cal(gamvec, Cvec, Xt, Xc, mon_ind, sigma_t, sigma_c,
-  alpha = 0.05)
+mod_del_cal(gamvec, Cvec, gam_min = min(gamvec), C_max = max(Cvec), Xt,
+  Xc, mon_ind, sigma_t, sigma_c, alpha = 0.05)
 }
 \arguments{
 \item{gamvec}{}
