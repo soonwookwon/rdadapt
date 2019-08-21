@@ -16,9 +16,9 @@ CI_length <- function(b, gamma, C, X, mon_ind, sigma = 1, alpha = .05) {
 
   om_inv <- invmod(b, rep(gamma, 2), rep(C, 2), X, mon_ind, sigma)
 
-  if (om_inv == 0) {
-    return(Inf)
-  }
+  # if (om_inv == 0) {
+  #   return(Inf)
+  # }
 
   K <- K_fun(b, gamma, C, X, mon_ind)
   gf_ip_iota <- sum(b * K / sigma^2)
@@ -61,12 +61,12 @@ CI_length_RD <- function(b, gamma, C, Xt, Xc, mon_ind, sigma_t = 1, sigma_c = 1,
   om_inv_c <- om_inv$delta_c
   om_inv <- om_inv$delta
     
-  if (om_inv == 0) return(Inf)
+  # if (om_inv == 0) return(Inf)
 
-  Kt <- K_fun(bt, gamma, C, Xt, mon_ind)
+  Kt <- K_fun(bt, rep(gamma,2), rep(C,2), Xt, mon_ind)
   gf_ip_iota_t <- sum(bt * Kt / sigma_t^2)
 
-  Kc <- K_fun(bc, gamma, C, Xc, mon_ind)
+  Kc <- K_fun(bc, rep(gamma,2), rep(C,2), Xc, mon_ind)
   gf_ip_iota_c <- sum(bc * Kc / sigma_c^2)
   
   sd <- sqrt((om_inv_t/gf_ip_iota_t)^2 + (om_inv_c/gf_ip_iota_c)^2)
@@ -175,16 +175,30 @@ Lhat_RD_fun <- function(b = NULL, bt = NULL, bc = NULL, gamma, C, Xt, Xc, Yt, Yc
 ##' @param sigma_t 
 ##' @param sigma_c 
 ##' @param alpha 
-##' @param modres 
+##' 
+##' @export
 CI_minimax_RD <- function(Yt, Yc, Xt, Xc, gam_min, C_max, mon_ind, sigma_t, sigma_c,
-                          alpha = .05, modres) {
+                          alpha = .05) {
 
-  CI_length_sol <- optimize(CI_length_RD, gamma = gam_min, C = C_max,
-                            Xt = Xt, Xc = Xc, mon_ind = mon_ind,
-                            sigma_t = sigma_t, sigma_c = sigma_c, alpha = alpha)
-
-  min_half_length <- CI_length_sol$obj / 2
-  opt_b <- CI_length_sol$val
+  # CI_length_sol <- optimize(CI_length_RD, gamma = gam_min, C = C_max,
+  #                           Xt = Xt, Xc = Xc, mon_ind = mon_ind,
+  #                           sigma_t = sigma_t, sigma_c = sigma_c, alpha = alpha)
+  # 
+  # min_half_length <- CI_length_sol$obj / 2
+  # opt_b <- CI_length_sol$val
+  
+  minbt <- minb_fun(rep(gam_min,2), rep(C_max,2), Xt, mon_ind, swap = FALSE)
+  minbc <- minb_fun(rep(gam_min,2), rep(C_max,2), Xc, mon_ind, swap = TRUE)
+  minb <- minbt + minbc
+  
+  CI_length_sol <- stats::nlminb(2 * minb, CI_length_RD,
+                                 gamma = gam_min, C = C_max, Xt = Xt, Xc = Xc, 
+                                 mon_ind = mon_ind, sigma_t = sigma_t, 
+                                 sigma_c = sigma_c, alpha = alpha,
+                                 lower = minb, upper = Inf)
+  
+  min_half_length <- CI_length_sol$objective / 2
+  opt_b <- CI_length_sol$par
 
   opt_Lhat <- Lhat_RD_fun(b = opt_b, gamma = rep(gam_min, 2), C = rep(C_max, 2),
                           Xt = Xt, Xc = Xc, Yt = Yt, Yc = Yc, mon_ind = mon_ind,
