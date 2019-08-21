@@ -16,7 +16,7 @@ K_fun <- function(b, gamma, C, X, mon_ind, swap = FALSE){
     gamma <- gamma[2:1]
     C <- C[2:1]
   }
-
+  
   K <- pos(1 - (C[1] / b) * Norm(Vplus(X, mon_ind))^gamma[1] -
              (C[2] / b) * Norm(Vminus(X, mon_ind))^gamma[2])
   
@@ -59,12 +59,12 @@ f2subf1_fun <- function(b, gamma, C, X, mon_ind, swap = FALSE){
 ##' @param swap 
 
 minb_fun <- function(gamma, C, X, mon_ind, swap = FALSE){
-
+  
   if (swap) {
     gamma <- gamma[2:1]
     C <- C[2:1]
   }
-
+  
   minb <- min(C[1] * Norm(Vplus(X, mon_ind))^gamma[1] +
                 C[2] * Norm(Vminus(X, mon_ind))^gamma[2])
   
@@ -88,15 +88,15 @@ minb_fun <- function(gamma, C, X, mon_ind, swap = FALSE){
 ##' @export
 
 invmod <- function(b, gamma, C, X, mon_ind, sigma = 1, swap = FALSE){
-
+  
   if (!(length(sigma) %in% c(1, nrow(X)))) {
     stop("sigma must have length 1 or n")
   }
-
+  
   K <- K_fun(b, gamma, C, X, mon_ind, swap = swap)
   
   res <- b * sqrt(sum(K^2 / sigma^2))
-
+  
   return(res)
 }
 
@@ -120,7 +120,7 @@ invmod <- function(b, gamma, C, X, mon_ind, sigma = 1, swap = FALSE){
 
 invmod_RD <- function(b, gamma, C, Xt, Xc, mon_ind, sigma_t = 1, sigma_c = 1,
                       swap = FALSE){
-
+  
   if (swap) {
     gamma <- gamma[2:1]
     C <- C[2:1]
@@ -135,10 +135,10 @@ invmod_RD <- function(b, gamma, C, Xt, Xc, mon_ind, sigma_t = 1, sigma_c = 1,
     om_inv_c_der <- f2subf1_fun(b - bt, gamma, C, Xc, mon_ind, swap = TRUE) /
       sigma_c^2
     om_inv_c_der <- sum(om_inv_c_der)
-
+    
     return(om_inv_t_der - om_inv_c_der)
   }
-
+  
   minbt <- minb_fun(gamma, C, Xt, mon_ind)
   
   if(b == minbt){
@@ -194,7 +194,7 @@ modsol <- function(delta, gamma, C, X, mon_ind, sigma = 1, swap = FALSE){
 
 modsol_RD <- function(delta, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
                       swap = FALSE){
-
+  
   if (swap) {
     gamma <- gamma[2:1]
     C <- C[2:1]
