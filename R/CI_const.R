@@ -16,9 +16,9 @@ CI_length <- function(b, gamma, C, X, mon_ind, sigma = 1, alpha = .05) {
 
   om_inv <- invmod(b, rep(gamma, 2), rep(C, 2), X, mon_ind, sigma)
 
-  # if (om_inv == 0) {
-  #   return(Inf)
-  # }
+  if (om_inv == 0) {
+    return(Inf)
+  }
 
   K <- K_fun(b, gamma, C, X, mon_ind)
   gf_ip_iota <- sum(b * K / sigma^2)
@@ -61,7 +61,7 @@ CI_length_RD <- function(b, gamma, C, Xt, Xc, mon_ind, sigma_t = 1, sigma_c = 1,
   om_inv_c <- om_inv$delta_c
   om_inv <- om_inv$delta
     
-  # if (om_inv == 0) return(Inf)
+  if (om_inv == 0) return(Inf)
 
   Kt <- K_fun(bt, rep(gamma,2), rep(C,2), Xt, mon_ind)
   gf_ip_iota_t <- sum(bt * Kt / sigma_t^2)
@@ -786,7 +786,7 @@ CI_gen <- function(Yt, Yc, Xt, Xc, C, C_max = max(C), mon_ind, sigma_t, sigma_c,
 
     if(length(C) > 1){
 
-      modres_mm <- mod_del_cal(min(gamma), max(C), 1, C_max, Xt, Xc, mon_ind,
+      modres_mm <- mod_del_cal(1, C_max, 1, C_max, Xt, Xc, mon_ind,
                                sigma_t, sigma_c, alpha_new)
       
     }else{
