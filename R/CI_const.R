@@ -79,6 +79,8 @@ CI_length_RD <- function(b, gamma, C, Xt, Xc, mon_ind, sigma_t = 1, sigma_c = 1,
   return(2 * cva * sd)
 }
 
+
+
 ##' Estimator used in constructing the minimax (or adaptive) CIs 
 ##'
 ##' Calculates the estimator used in constructing then minimax (or adaptive) CIs
@@ -187,8 +189,9 @@ CI_minimax_RD <- function(Yt, Yc, Xt, Xc, gam_min, C_max, mon_ind, sigma_t, sigm
   # min_half_length <- CI_length_sol$obj / 2
   # opt_b <- CI_length_sol$val
   
-  minbt <- minb_fun(rep(gam_min,2), rep(C_max,2), Xt, mon_ind, swap = FALSE)
-  minbc <- minb_fun(rep(gam_min,2), rep(C_max,2), Xc, mon_ind, swap = TRUE)
+  modres <- modsol_RD(0,rep(gam_min,2), rep(C_max,2), Xt, Xc, mon_ind, sigma_t, sigma_c)
+  minbt <- modres$bt
+  minbc <- modres$bc
   minb <- minbt + minbc
   
   CI_length_sol <- stats::nlminb(2 * minb, CI_length_RD,
