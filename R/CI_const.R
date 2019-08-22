@@ -494,10 +494,11 @@ AdjAlpha2 <- function(gamma, C, X, sigma, mon_ind, simlen = 1e04,
 ##' @param lower 
 ##' @param simlen 
 ##' @param alpha 
+##' @param corr_tol
 ##'
 ##' @export
 AdjAlpha_RD <- function(gamma, C, gam_min = min(gamma), C_max = max(C), Xt, Xc, 
-                        mon_ind, sigma_t, sigma_c, lower, simlen = 1e06, alpha = .05){
+                        mon_ind, sigma_t, sigma_c, lower, simlen = 1e06, alpha, corr_tol = 1 - 10^(-3)){
   
   J <- length(gamma)
   nt <- nrow(Xt)
@@ -537,7 +538,7 @@ AdjAlpha_RD <- function(gamma, C, gam_min = min(gamma), C_max = max(C), Xt, Xc,
     sigmamat <- sigmamat_t + sigmamat_c
     
     corrs <- sigmamat[row(sigmamat) != col(sigmamat)]
-    if(min(corrs) == 1){
+    if(min(corrs) > corr_tol){
       
       q <- 0
     }else{
@@ -763,7 +764,7 @@ which_proc <- function(Cgrid, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
 #'
 #' @examples
 CI_gen <- function(Yt, Yc, Xt, Xc, C, C_max = max(C), mon_ind, sigma_t, sigma_c,
-                   lower, two_sided = F, alpha = 0.05,
+                   lower, two_sided = F, alpha,
                    modres = NULL){
 
   gamma <- rep(1, length(C))
