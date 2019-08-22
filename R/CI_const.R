@@ -80,7 +80,6 @@ CI_length_RD <- function(b, gamma, C, Xt, Xc, mon_ind, sigma_t = 1, sigma_c = 1,
 }
 
 
-
 ##' Estimator used in constructing the minimax (or adaptive) CIs 
 ##'
 ##' Calculates the estimator used in constructing then minimax (or adaptive) CIs
