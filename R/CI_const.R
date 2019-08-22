@@ -535,15 +535,27 @@ AdjAlpha_RD <- function(gamma, C, gam_min = min(gamma), C_max = max(C), Xt, Xc,
     sigmamat_t <- t(weightmat_t) %*% weightmat_t
     sigmamat_c <- t(weightmat_c) %*% weightmat_c
     sigmamat <- sigmamat_t + sigmamat_c
-
-    q <- maxminQ2(numeric(J), sigmamat, alpha, simlen, tau)
+    
+    corrs <- sigmamat[row(sigmamat) != col(sigmamat)]
+    if(min(corrs) == 1){
+      
+      q <- 0
+    }else{
+      
+      q <- maxminQ2(numeric(J), sigmamat, alpha, simlen, tau)
+    }
 
     return(q) 
   }
   
-  r <- stats::uniroot(prob_maxV, c(alpha / J, alpha), extendInt = "yes")
-  r <- stats::uniroot(prob_maxV, c(alpha / (2*J), 2*alpha))
-  res <- r$root
+  if(prob_maxV(alpha) == 0){
+    
+    res <- alpha
+  }else{
+    
+    r <- stats::uniroot(prob_maxV, c(alpha / J, alpha), extendInt = "yes")
+    res <- r$root
+  }
   
   return(res)
 }
