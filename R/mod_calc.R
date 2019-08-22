@@ -93,9 +93,13 @@ invmod <- function(b, gamma, C, X, mon_ind, sigma = 1, swap = FALSE){
     stop("sigma must have length 1 or n")
   }
   
-  K <- K_fun(b, gamma, C, X, mon_ind, swap = swap)
+  # K <- K_fun(b, gamma, C, X, mon_ind, swap = swap)
+  # 
+  # res <- b * sqrt(sum(K^2 / sigma^2))
   
-  res <- b * sqrt(sum(K^2 / sigma^2))
+  K <- f2subf1_fun(b, gamma, C, X, mon_ind, swap = swap)
+  
+  res <- sqrt(sum(K^2 / sigma^2))
   
   return(res)
 }
