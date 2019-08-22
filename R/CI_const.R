@@ -497,7 +497,7 @@ AdjAlpha2 <- function(gamma, C, X, sigma, mon_ind, simlen = 1e04,
 ##'
 ##' @export
 AdjAlpha_RD <- function(gamma, C, gam_min = min(gamma), C_max = max(C), Xt, Xc, 
-                        mon_ind, sigma_t, sigma_c, lower, simlen = 1e05, alpha = .05){
+                        mon_ind, sigma_t, sigma_c, lower, simlen = 1e06, alpha = .05){
   
   J <- length(gamma)
   nt <- nrow(Xt)
@@ -542,6 +542,7 @@ AdjAlpha_RD <- function(gamma, C, gam_min = min(gamma), C_max = max(C), Xt, Xc,
   }
   
   r <- stats::uniroot(prob_maxV, c(alpha / J, alpha), extendInt = "yes")
+  r <- stats::uniroot(prob_maxV, c(alpha / (2*J), 2*alpha))
   res <- r$root
   
   return(res)
