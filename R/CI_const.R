@@ -584,7 +584,7 @@ AdjAlpha2 <- function(gamma, C, X, sigma, mon_ind, simlen = 1e04,
 ##'
 ##' @export
 AdjAlpha_RD <- function(gamma, C, gam_min = min(gamma), C_max = max(C), Xt, Xc, 
-                        mon_ind, sigma_t, sigma_c, lower, simlen = 1e06, alpha, 
+                        mon_ind, sigma_t, sigma_c, lower, simlen = 1e05, alpha, 
                         corr_tol = 1 - 10^(-3)){
   
   J <- length(gamma)
