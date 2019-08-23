@@ -179,34 +179,60 @@ Lhat_RD_fun <- function(b = NULL, bt = NULL, bc = NULL, gamma, C, Xt, Xc, Yt, Yc
 ##' 
 ##' @export
 CI_minimax_RD <- function(Yt, Yc, Xt, Xc, gam_min, C_max, mon_ind, sigma_t, sigma_c,
-                          alpha = .05) {
-
-  # CI_length_sol <- optimize(CI_length_RD, gamma = gam_min, C = C_max,
-  #                           Xt = Xt, Xc = Xc, mon_ind = mon_ind,
-  #                           sigma_t = sigma_t, sigma_c = sigma_c, alpha = alpha)
-  # 
-  # min_half_length <- CI_length_sol$obj / 2
-  # opt_b <- CI_length_sol$val
+                          alpha = .05, opt_b = NULL, min_half_length = NULL,
+                          maxb.const = 10, Prov.Plot = FALSE, Prov.detail = FALSE) {
   
-  modres <- modsol_RD(0,rep(gam_min,2), rep(C_max,2), Xt, Xc, mon_ind, sigma_t, sigma_c)
-  minbt <- modres$bt
-  minbc <- modres$bc
-  minb <- minbt + minbc
+  if(is.null(opt_b) | is.null(min_half_length)){
+    
+    modres <- modsol_RD(0,rep(gam_min,2), rep(C_max,2), Xt, Xc, mon_ind, 
+                        sigma_t, sigma_c)
+    minbt <- modres$bt
+    minbc <- modres$bc
+    minb <- minbt + minbc
+    
+    maxb <- maxb.const * (modsol_RD(qnorm(1 - alpha/2),rep(gam_min,2), rep(C_max,2), 
+                                   Xt, Xc, mon_ind, sigma_t, sigma_c)$bt +
+                            modsol_RD(qnorm(1 - alpha/2),rep(gam_min,2), rep(C_max,2), 
+                                      Xt, Xc, mon_ind, sigma_t, sigma_c)$bc)
+    
+    CI_length_sol <- stats::optimize(CI_length_RD, interval = c(minb, maxb), 
+                              gamma = gam_min, C = C_max,
+                              Xt = Xt, Xc = Xc, mon_ind = mon_ind,
+                              sigma_t = sigma_t, sigma_c = sigma_c, alpha = alpha)
+    
+    min_half_length <- CI_length_sol$objective / 2
+    opt_b <- CI_length_sol$minimum
+    
+    if(Prov.Plot == TRUE){
+      
+      numgrid = 100
+      xintv = seq(from = minb, to = maxb, length.out = numgrid)
+      yvec = numeric(numgrid)
+      for(i in 1:numgrid){
+        
+        yvec[i] = CI_length_RD(xintv[i], gamma = gam_min, C = C_max,
+                              Xt = Xt, Xc = Xc, mon_ind = mon_ind,
+                              sigma_t = sigma_t, sigma_c = sigma_c, alpha = alpha)
+      }
+      
+      plot(xintv, yvec, type = "l", xlab = "modulus", ylab = "CI_length")
+      abline(v = opt_b, col = "red", lty = 2)
+    }
+  }
   
-  CI_length_sol <- stats::nlminb(2 * minb, CI_length_RD,
-                                 gamma = gam_min, C = C_max, Xt = Xt, Xc = Xc, 
-                                 mon_ind = mon_ind, sigma_t = sigma_t, 
-                                 sigma_c = sigma_c, alpha = alpha,
-                                 lower = minb, upper = Inf)
-  
-  min_half_length <- CI_length_sol$objective / 2
-  opt_b <- CI_length_sol$par
+  if(Prov.detail == FALSE){
+    
+    opt_Lhat <- Lhat_RD_fun(b = opt_b, gamma = rep(gam_min, 2), C = rep(C_max, 2),
+                            Xt = Xt, Xc = Xc, Yt = Yt, Yc = Yc, mon_ind = mon_ind,
+                            sigma_t = sigma_t, sigma_c = sigma_c)
+    res = c(opt_Lhat - min_half_length, opt_Lhat + min_half_length)
+    
+  }else{
+    
+    res = list(opt_b = opt_b, min_half_length = min_half_length)
+  }
 
-  opt_Lhat <- Lhat_RD_fun(b = opt_b, gamma = rep(gam_min, 2), C = rep(C_max, 2),
-                          Xt = Xt, Xc = Xc, Yt = Yt, Yc = Yc, mon_ind = mon_ind,
-                          sigma_t = sigma_t, sigma_c = sigma_c)
-
-  return(c(opt_Lhat - min_half_length, opt_Lhat + min_half_length))
+  return(res)
 }
 
 ##' (One-sided) Adaptive CI for RDD
@@ -500,7 +526,8 @@ AdjAlpha2 <- function(gamma, C, X, sigma, mon_ind, simlen = 1e04,
 ##'
 ##' @export
 AdjAlpha_RD <- function(gamma, C, gam_min = min(gamma), C_max = max(C), Xt, Xc, 
-                        mon_ind, sigma_t, sigma_c, lower, simlen = 1e06, alpha, corr_tol = 1 - 10^(-3)){
+                        mon_ind, sigma_t, sigma_c, lower, simlen = 1e06, alpha, 
+                        corr_tol = 1 - 10^(-3)){
   
   J <- length(gamma)
   nt <- nrow(Xt)
