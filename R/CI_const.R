@@ -911,3 +911,26 @@ CI_gen <- function(Yt, Yc, Xt, Xc, C, C_max = max(C), mon_ind, sigma_t, sigma_c,
   
   return(res)
 }
+
+#' Calculate squared residuals
+#' 
+#' Calculate squared residuals using the nearest-neighbor estimator
+#'
+#' @param Y 
+#' @param X 
+#' @param num_nn 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+resid_nn <- function(Y, X, num_nn = 3){
+  
+  knn_res <- get.knn(X, k = num_nn)
+  nn_ind <- knn_res$nn.index
+  Y_match <- matrix(Y[nn_ind], nrow = length(Y), ncol = num_nn)
+  Y_match_avg <- rowMeans(Y_match)
+  res <- (Y - Y_match_avg)^2 * (num_nn / (num_nn + 1))
+  
+  return(res)
+}
