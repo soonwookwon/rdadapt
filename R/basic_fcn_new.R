@@ -73,7 +73,7 @@ Norm <- function(X, p = 2, invw = 1) {
 #' @param mon_ind Monotone variable index, whose length is equal to the column length of X 
 #' @param swap Indicator for whether we take (C', C) instead of (C, C')
 #'
-#' @return
+#' @return A numeric vector with the length equal to nrow(X)
 #' @export
 #'
 #' @examples
