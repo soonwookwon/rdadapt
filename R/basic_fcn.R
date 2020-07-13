@@ -1,7 +1,3 @@
-pos <- function(X) {
-  return(pmax(X, 0))
-}
-
 Norm <- function(X, p = 2, invw = 1) {
   # Lp norm
   # invw can be scalar or k-dimensional inverse weight
@@ -14,18 +10,6 @@ Norm <- function(X, p = 2, invw = 1) {
   Xw = X / invw
  
   return(rowSums(abs(Xw)^p)^(1/p))
-}
-
-Vplus <- function(X, kplus_ind) {
-
-  Xplus <- X
-  Xplus[,kplus_ind] <- pos(X[, kplus_ind])
-
-  return(Xplus)
-}
-
-Vminus <- function(X, kplus_ind) {
-  return(Vplus(-X, kplus_ind))
 }
 
 maxminQ <- function(mu, sigma, alpha, simlen, lower){
