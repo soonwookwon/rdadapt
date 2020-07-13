@@ -1,4 +1,10 @@
 *.~
 /R/CI_const.R~
 /README.md~
-/R/FinalOutputFuns.R
+/R/test.R
+/R/MC_1dim.R
+/R/MC_2dim.R
+/R/MC_1dim_WrongC.R
+/R/SimulationSetting.R
+.Rproj.user
+/MC_res
