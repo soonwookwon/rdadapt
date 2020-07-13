@@ -1,17 +1,3 @@
-Norm <- function(X, p = 2, invw = 1) {
-  # Lp norm
-  # invw can be scalar or k-dimensional inverse weight
-  # X should be matrix object
-  
-  n <- nrow(X)
-  k <- ncol(X)
-
-  invw <- matrix(rep(invw, each = n), nrow = n, ncol = k)
-  Xw = X / invw
- 
-  return(rowSums(abs(Xw)^p)^(1/p))
-}
-
 maxminQ <- function(mu, sigma, alpha, simlen, lower){
   
   simdata <- MASS::mvrnorm(n = simlen, mu, sigma)
