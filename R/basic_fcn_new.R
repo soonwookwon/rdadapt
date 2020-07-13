@@ -78,7 +78,6 @@ Norm <- function(X, p = 2, invw = 1) {
 #'
 #' @examples
 K_fun <- function(b, gam_pair = c(1, 1), C_pair, X, mon_ind, swap = FALSE){
-# gam_pair is for adaptation to Holder cofficients
   
   if (swap) {
     gam_pair <- gam_pair[2:1]
