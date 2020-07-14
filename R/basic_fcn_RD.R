@@ -9,13 +9,14 @@
 #'
 #' @examples
 pos <- function(X) {
+  
   return(pmax(X, 0))
 }
 
 #' Function for (x)_(V+)
 #'
 #' @param X A data matrix
-#' @param mon_ind Monotone variable index, whose length is equal to ncol(X)
+#' @param mon_ind index number for monotone variables
 #'
 #' @return A matrix in the same dimension of X, after (x)_(V+) was applied to each row x of X.
 #' @export
@@ -32,7 +33,7 @@ Vplus <- function(X, mon_ind) {
 #' Function for (x)_(V-)
 #'
 #' @param X A numeric matrix
-#' @param mon_ind Monotone variable index, whose length is equal to ncol(X)
+#' @param mon_ind index number for monotone variables
 #'
 #' @return A matrix in the same dimension of X, after (x)_(V-) was applied to each row x of X.
 #' @export
@@ -70,10 +71,11 @@ Norm <- function(X, p = 2, invw = 1) {
 #' @param gam_pair Not to be used in RDD paper
 #' @param C_pair (C, C')
 #' @param X A data matrix
-#' @param mon_ind Monotone variable index, whose length is equal to the column length of X 
+#' @param mon_ind index number for monotone variables
 #' @param swap Indicator for whether we take (C', C) instead of (C, C')
 #'
-#' @return A numeric vector with the length equal to nrow(X)
+#' @return A numeric vector with the length equal to nrow(X);
+#' if b = 0, returns 0 vector
 #' @export
 #'
 #' @examples
@@ -84,8 +86,15 @@ K_fun <- function(b, gam_pair = c(1, 1), C_pair, X, mon_ind, swap = FALSE){
     C_pair <- C_pair[2:1]
   }
   
-  K <- pos(1 - (C_pair[1] / b) * Norm(Vplus(X, mon_ind))^gam_pair[1] -
-             (C_pair[2] / b) * Norm(Vminus(X, mon_ind))^gam_pair[2])
+  if(b == 0){
+    
+    res <- rep(0, nrow(X))
+    
+  }else{
+    
+    res <- pos(1 - (C_pair[1] / b) * Norm(Vplus(X, mon_ind))^gam_pair[1] -
+               (C_pair[2] / b) * Norm(Vminus(X, mon_ind))^gam_pair[2])
+  }
   
-  return(K)
+  return(res)
 }

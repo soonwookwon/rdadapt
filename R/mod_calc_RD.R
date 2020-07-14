@@ -15,7 +15,7 @@
 ##' @return A scalar value
 ##' @export
 
-invmod <- function(b, gam_pair, C_pair, X, mon_ind, sigma = 1, swap = FALSE){
+invmod <- function(b, gam_pair = c(1, 1), C_pair, X, mon_ind, sigma = 1, swap = FALSE){
   
   if (!(length(sigma) %in% c(1, nrow(X)))) {
     stop("sigma must have length 1 or n")
@@ -34,10 +34,10 @@ invmod <- function(b, gam_pair, C_pair, X, mon_ind, sigma = 1, swap = FALSE){
 ##' @param gam_pair Not to be used in RD application
 ##' @param C_pair (C, C')
 ##' @param X A data matrix
-##' @param mon_ind Monotone variable index, whose length is equal to the column length of X 
+##' @param mon_ind index number for monotone variables
 ##' @param swap Indicator for whether we take (C', C) instead of (C, C')
 
-minb_fun <- function(gam_pair, C_pair, X, mon_ind, swap = FALSE){
+minb_fun <- function(gam_pair = c(1, 1), C_pair, X, mon_ind, swap = FALSE){
   
   if (swap) {
     gam_pair <- gam_pair[2:1]
@@ -60,7 +60,7 @@ minb_fun <- function(gam_pair, C_pair, X, mon_ind, swap = FALSE){
 ##' @param C_pair length two vector of Cs (\eqn{(C_1, C_2)'})
 ##' @param Xt \eqn{n_t \times k} design matrix for the treated units
 ##' @param Xc \eqn{n_c \times k} design matrix for the control units
-##' @param mon_ind index of the monotone variables
+##' @param mon_ind index number for monotone variables
 ##' @param sigma_t standard deviation of the error term for the treated units
 ##' (either length 1 or \eqn{n_t})
 ##' @param sigma_c standard deviation of the error term for the control units
@@ -70,7 +70,7 @@ minb_fun <- function(gam_pair, C_pair, X, mon_ind, swap = FALSE){
 ##' @return
 ##' @export
 
-invmod_RD <- function(b, gam_pair, C_pair, Xt, Xc, mon_ind, sigma_t = 1, sigma_c = 1,
+invmod_RD <- function(b, gam_pair = c(1, 1), C_pair, Xt, Xc, mon_ind, sigma_t = 1, sigma_c = 1,
                       swap = FALSE){
   
   if (swap) {
@@ -78,29 +78,36 @@ invmod_RD <- function(b, gam_pair, C_pair, Xt, Xc, mon_ind, sigma_t = 1, sigma_c
     C_pair <- C_pair[2:1]
   }
   
+  
   ## Derivative of the square of the minization problem 
   deriv_bt <- function(bt) {
     
     bc <- b - bt
     
-    om_inv_t_der <- bt * K_fun(bt, gam_pair, C_pair, X, mon_ind) / sigma_t^2
+    om_inv_t_der <- bt * K_fun(bt, gam_pair, C_pair, Xt, mon_ind) / sigma_t^2
     om_inv_t_der <- sum(om_inv_t_der)
     
-    om_inv_c_der <- bc * K_fun(bc, gam_pair, C_pair, X, mon_ind, swap = TRUE) / sigma_c^2
+    om_inv_c_der <- bc * K_fun(bc, gam_pair, C_pair, Xc, mon_ind, swap = TRUE) / sigma_c^2
     om_inv_c_der <- sum(om_inv_c_der)
     
     return(om_inv_t_der - om_inv_c_der)
   }
   
   minbt <- minb_fun(gam_pair, C_pair, Xt, mon_ind)
+  minbc <- minb_fun(gam_pair, C_pair, Xc, mon_ind, swap = T)
+  minb <- minbt + minbc
   
-  if(b == minbt){
+  if(b == minb){  # delta = 0 case
     
     bt <- minbt
   
+  }else if(deriv_bt(minbt) * deriv_bt(b - minbc) > 0){ # Corner solution
+    
+    bt <- b - minbc
+    
   }else{
     
-    bt_sol <- stats::uniroot(deriv_bt, c(minbt, b), tol = .Machine$double.eps^10)
+    bt_sol <- stats::uniroot(deriv_bt, c(minbt, b - minbc), tol = .Machine$double.eps^10)
     bt <- bt_sol$root
   }
   
@@ -120,7 +127,7 @@ invmod_RD <- function(b, gam_pair, C_pair, Xt, Xc, mon_ind, sigma_t = 1, sigma_c
 #' @param C_pair (C, C')
 #' @param Xt \eqn{n_t \times k} design matrix for the treated units
 #' @param Xc \eqn{n_c \times k} design matrix for the control units
-#' @param mon_ind index of the monotone variables
+#' @param mon_ind index number for monotone variables
 #' @param sigma_t standard deviation of the error term for the treated units
 #' (either length 1 or \eqn{n_t})
 #' @param sigma_c standard deviation of the error term for the control units
@@ -131,7 +138,7 @@ invmod_RD <- function(b, gam_pair, C_pair, Xt, Xc, mon_ind, sigma_t = 1, sigma_c
 #' @export
 #'
 #' @examples
-modsol_RD <- function(delta, gam_pair, C_pair, Xt, Xc, mon_ind, sigma_t, sigma_c,
+modsol_RD <- function(delta, gam_pair = c(1, 1), C_pair, Xt, Xc, mon_ind, sigma_t, sigma_c,
                       swap = FALSE){
   
   if (swap) {
@@ -147,8 +154,9 @@ modsol_RD <- function(delta, gam_pair, C_pair, Xt, Xc, mon_ind, sigma_t, sigma_c
   
   eqn_fun <- function(b) {
     
-    delta_t <- invmod_RD(b, gam_pair, C_pair, Xt, Xc, mon_ind, sigma_t, sigma_c)$delta_t
-    delta_c <- invmod_RD(b, gam_pair, C_pair, Xt, Xc, mon_ind, sigma_t, sigma_c)$delta_c
+    invmod_RD_res <- invmod_RD(b, gam_pair, C_pair, Xt, Xc, mon_ind, sigma_t, sigma_c)
+    delta_t <- invmod_RD_res$delta_t
+    delta_c <- invmod_RD_res$delta_c
     
     res <- sqrt(delta_t^2 + delta_c^2) - delta
     return(res)
