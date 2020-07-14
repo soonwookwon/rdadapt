@@ -1,28 +1,54 @@
-##' Calculate \eqn{f_2^* - f_1^*}
+##' Inverse modulus
 ##'
-##' This function calculates \eqn{f_2^* - f_1^*} that correponds to
+##' Calculates the inverse modulus for the regression function at a point
+##' problem. More specifically, this calcultes
 ##' \eqn{\omega^{-1}(b, \Lambda_{\mathcal{V}+}(\gamma_1, C_1),\Lambda_{\mathcal{V}+}(\gamma_2, C_2)) }
 ##' 
 ##' @param b point where the inverse modulus is evaluated at
-##' @param gamma length two vector of gammas (\eqn{(\gamma_1, \gamma_2)'})
-##' @param C length two vector of Cs (\eqn{(C_1, C_2)'})
-##' @param X n\eqn{\times}k design matrix, the kernel is evaluated at each X[i, ]
-##' @param mon_ind indice of the monotone variables
-##' @param swap indicator of whether to swap the \eqn{\gamma} and \eqn{C}.
+##' @param gam_pair length two vector of gammas (\eqn{(\gamma_1, \gamma_2)'})
+##' @param C_pair length two vector of Cs (\eqn{(C_1, C_2)'})
+##' @param X n\eqn{\times}k design matrix
+##' @param mon_ind index of the monotone variables
+##' @param sigma standard deviation of the error term (either length 1 or n)
+##' @param swap Indicator for whether we take (C', C) instead of (C, C')
+##' 
+##' @return A scalar value
+##' @export
 
-f2subf1_fun <- function(b, gamma, C, X, mon_ind, swap = FALSE){
+invmod <- function(b, gam_pair, C_pair, X, mon_ind, sigma = 1, swap = FALSE){
   
-  if (swap) {
-    gamma <- gamma[2:1]
-    C <- C[2:1]
+  if (!(length(sigma) %in% c(1, nrow(X)))) {
+    stop("sigma must have length 1 or n")
   }
   
-  K <- pos(b - (C[1]) * Norm(Vplus(X, mon_ind))^gamma[1] -
-             (C[2]) * Norm(Vminus(X, mon_ind))^gamma[2])
+  K <- b * K_fun(b, gam_pair, C_pair, X, mon_ind, swap)
+  res <- sqrt(sum(K^2 / sigma^2))
   
-  return(K)
+  return(res)
 }
 
+##' Calculate omega(0)
+##'
+##' Calculates the smallest possible b value, or omega(0)
+##' 
+##' @param gam_pair Not to be used in RD application
+##' @param C_pair (C, C')
+##' @param X A data matrix
+##' @param mon_ind Monotone variable index, whose length is equal to the column length of X 
+##' @param swap Indicator for whether we take (C', C) instead of (C, C')
+
+minb_fun <- function(gam_pair, C_pair, X, mon_ind, swap = FALSE){
+  
+  if (swap) {
+    gam_pair <- gam_pair[2:1]
+    C_pair <- C_pair[2:1]
+  }
+  
+  minb <- min(C_pair[1] * Norm(Vplus(X, mon_ind))^gam_pair[1] +
+                C_pair[2] * Norm(Vminus(X, mon_ind))^gam_pair[2])
+  
+  return(minb)
+}
 
 ##' Invsere modulus for RDD
 ##'
@@ -30,97 +56,109 @@ f2subf1_fun <- function(b, gamma, C, X, mon_ind, swap = FALSE){
 ##' problem. 
 ##' 
 ##' @param b point where the inverse modulus is evaluated at
-##' @param gamma length two vector of gammas (\eqn{(\gamma_1, \gamma_2)'})
-##' @param C length two vector of Cs (\eqn{(C_1, C_2)'})
+##' @param gam_pair length two vector of gam_pairs (\eqn{(\gam_pair_1, \gam_pair_2)'})
+##' @param C_pair length two vector of Cs (\eqn{(C_1, C_2)'})
 ##' @param Xt \eqn{n_t \times k} design matrix for the treated units
 ##' @param Xc \eqn{n_c \times k} design matrix for the control units
-##' @param mon_ind indice of the monotone variables
+##' @param mon_ind index of the monotone variables
 ##' @param sigma_t standard deviation of the error term for the treated units
 ##' (either length 1 or \eqn{n_t})
 ##' @param sigma_c standard deviation of the error term for the control units
+##' ##' (either length 1 or \eqn{n_c})
 ##' @param swap indicator of whether to swap the parameter spaces
 ##' 
+##' @return
 ##' @export
 
-invmod_RD <- function(b, gamma, C, Xt, Xc, mon_ind, sigma_t = 1, sigma_c = 1,
+invmod_RD <- function(b, gam_pair, C_pair, Xt, Xc, mon_ind, sigma_t = 1, sigma_c = 1,
                       swap = FALSE){
   
   if (swap) {
-    gamma <- gamma[2:1]
-    C <- C[2:1]
+    gam_pair <- gam_pair[2:1]
+    C_pair <- C_pair[2:1]
   }
   
   ## Derivative of the square of the minization problem 
   deriv_bt <- function(bt) {
     
-    om_inv_t_der <- f2subf1_fun(bt, gamma, C, Xt, mon_ind) / sigma_t^2
+    bc <- b - bt
+    
+    om_inv_t_der <- bt * K_fun(bt, gam_pair, C_pair, X, mon_ind) / sigma_t^2
     om_inv_t_der <- sum(om_inv_t_der)
     
-    om_inv_c_der <- f2subf1_fun(b - bt, gamma, C, Xc, mon_ind, swap = TRUE) /
-      sigma_c^2
+    om_inv_c_der <- bc * K_fun(bc, gam_pair, C_pair, X, mon_ind, swap = TRUE) / sigma_c^2
     om_inv_c_der <- sum(om_inv_c_der)
     
     return(om_inv_t_der - om_inv_c_der)
   }
   
-  minbt <- minb_fun(gamma, C, Xt, mon_ind)
+  minbt <- minb_fun(gam_pair, C_pair, Xt, mon_ind)
   
   if(b == minbt){
-    bt <- minbt
-  }else{
-    bt_sol <- stats::uniroot(deriv_bt, c(minbt, b), tol = .Machine$double.eps^10)
     
+    bt <- minbt
+  
+  }else{
+    
+    bt_sol <- stats::uniroot(deriv_bt, c(minbt, b), tol = .Machine$double.eps^10)
     bt <- bt_sol$root
   }
   
-  delta_t <- invmod(bt, gamma, C, Xt, mon_ind, sigma_t)
-  delta_c <- invmod(b - bt, gamma, C, Xc, mon_ind, sigma_c, swap = TRUE)
+  delta_t <- invmod(bt, gam_pair, C_pair, Xt, mon_ind, sigma_t)
+  delta_c <- invmod(b - bt, gam_pair, C_pair, Xc, mon_ind, sigma_c, swap = TRUE)
   
-  res <- list(delta = sqrt(delta_t^2 + delta_c^2), bt = bt, delta_t = delta_t,
-              bc = b - bt, delta_c = delta_c)
+  res <- list(bt = bt, delta_t = delta_t, bc = b - bt, delta_c = delta_c)
   
   return(res)
   
 }
 
-
-##' Calculate modulus for RDD
-##'
-##' @param delta 
-##' @param gamma 
-##' @param C 
-##' @param Xt 
-##' @param Xc 
-##' @param mon_ind 
-##' @param sigma_t 
-##' @param sigma_c 
-##' @param sol_list
-##' @export
-
-modsol_RD <- function(delta, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c,
+#' Solves for the modulus for the RD parameter
+#'
+#' @param delta a nonnegative value
+#' @param gam_pair not to be used in RD application
+#' @param C_pair (C, C')
+#' @param Xt \eqn{n_t \times k} design matrix for the treated units
+#' @param Xc \eqn{n_c \times k} design matrix for the control units
+#' @param mon_ind index of the monotone variables
+#' @param sigma_t standard deviation of the error term for the treated units
+#' (either length 1 or \eqn{n_t})
+#' @param sigma_c standard deviation of the error term for the control units
+#' either length 1 or \eqn{n_c})
+#' @param swap indicator of whether to swap the parameter spaces
+#'
+#' @return
+#' @export
+#'
+#' @examples
+modsol_RD <- function(delta, gam_pair, C_pair, Xt, Xc, mon_ind, sigma_t, sigma_c,
                       swap = FALSE){
   
   if (swap) {
-    gamma <- gamma[2:1]
-    C <- C[2:1]
+    gam_pair <- gam_pair[2:1]
+    C_pair <- C_pair[2:1]
   }
   
-  maxint <- 100
+  maxint <- 100 # An arbitrary large number; doesn't affect the result
   
-  minbt <- minb_fun(gamma, C, Xt, mon_ind)
-  minbc <- minb_fun(gamma, C, Xc, mon_ind, swap = TRUE)
+  minbt <- minb_fun(gam_pair, C_pair, Xt, mon_ind)
+  minbc <- minb_fun(gam_pair, C_pair, Xc, mon_ind, swap = TRUE)
   minb <- minbt + minbc
   
-  fun <- function(b) {
-    invmod_RD(b, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c)$delta - delta
+  eqn_fun <- function(b) {
+    
+    delta_t <- invmod_RD(b, gam_pair, C_pair, Xt, Xc, mon_ind, sigma_t, sigma_c)$delta_t
+    delta_c <- invmod_RD(b, gam_pair, C_pair, Xt, Xc, mon_ind, sigma_t, sigma_c)$delta_c
+    
+    res <- sqrt(delta_t^2 + delta_c^2) - delta
+    return(res)
   }
   
-  solve <- stats::uniroot(fun, c(minb, maxint), extendInt = "upX",
+  solve <- stats::uniroot(eqn_fun, c(minb, maxint), extendInt = "upX",
                           tol = .Machine$double.eps^10)
-  
   bsol <- solve$root
   
-  res <- invmod_RD(bsol, gamma, C, Xt, Xc, mon_ind, sigma_t, sigma_c)
+  res <- invmod_RD(bsol, gam_pair, C_pair, Xt, Xc, mon_ind, sigma_t, sigma_c)
   
   return(res)
 }
