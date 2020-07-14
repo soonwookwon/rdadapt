@@ -1,3 +1,29 @@
+##' Calculate \eqn{f_2^* - f_1^*}
+##'
+##' This function calculates \eqn{f_2^* - f_1^*} that correponds to
+##' \eqn{\omega^{-1}(b, \Lambda_{\mathcal{V}+}(\gamma_1, C_1),\Lambda_{\mathcal{V}+}(\gamma_2, C_2)) }
+##' 
+##' @param b point where the inverse modulus is evaluated at
+##' @param gamma length two vector of gammas (\eqn{(\gamma_1, \gamma_2)'})
+##' @param C length two vector of Cs (\eqn{(C_1, C_2)'})
+##' @param X n\eqn{\times}k design matrix, the kernel is evaluated at each X[i, ]
+##' @param mon_ind indice of the monotone variables
+##' @param swap indicator of whether to swap the \eqn{\gamma} and \eqn{C}.
+
+f2subf1_fun <- function(b, gamma, C, X, mon_ind, swap = FALSE){
+  
+  if (swap) {
+    gamma <- gamma[2:1]
+    C <- C[2:1]
+  }
+  
+  K <- pos(b - (C[1]) * Norm(Vplus(X, mon_ind))^gamma[1] -
+             (C[2]) * Norm(Vminus(X, mon_ind))^gamma[2])
+  
+  return(K)
+}
+
+
 ##' Invsere modulus for RDD
 ##'
 ##' Calculates the inverse modulus for the RDD
