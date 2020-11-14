@@ -17,7 +17,3 @@ Many of the functions given in the package take vectors (many cases of length
 2, but not necessarily) `C` and `gamma` as arguments. The convention is that the
 elements that come first *always* correpond to smaller parameter spaces than
 those come later.
-
-Test line
-
-Test line2
